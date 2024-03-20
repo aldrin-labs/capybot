@@ -8,6 +8,7 @@ import { RAMMSuiParams } from '../dexsParams'
 import { Pool } from '../pool'
 
 import { RAMMSuiPool, RAMMSuiPoolConfig, PriceEstimationEvent } from '@ramm/ramm-sui-sdk'
+import { logger } from '../../logger'
 
 export class RAMMPool extends Pool<RAMMSuiParams> {
     private rammSuiPool: RAMMSuiPool
@@ -130,21 +131,25 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             { assetIn: this.coinTypeA, assetOut: this.coinTypeB }:
             { assetIn: this.coinTypeB, assetOut: this.coinTypeA };
 
-        const { newCoinObj } = await this.prepareCoinForPaymentCommon(
-            transactionBlock,
-            assetIn,
-            params.amountIn
-        );
-
-        this.rammSuiPool.tradeAmountIn(
-            transactionBlock,
-            {
+        try {
+            const { newCoinObj } = await this.prepareCoinForPaymentCommon(
+                transactionBlock,
                 assetIn,
-                assetOut,
-                amountIn: newCoinObj,
-                minAmountOut: 1
-            }
-        );
+                params.amountIn
+            );
+
+            this.rammSuiPool.tradeAmountIn(
+                transactionBlock,
+                {
+                    assetIn,
+                    assetOut,
+                    amountIn: newCoinObj,
+                    minAmountOut: 1
+                }
+            );
+        } catch (e) {
+            logger.error(e);
+        };
 
         return transactionBlock
     }
@@ -188,18 +193,9 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         // Price estimation, if successful, only returns one event, so this indexation is safe.
         const priceEstimationEventJSON = devInspectRes.events[0].parsedJson as PriceEstimationEvent;
 
-        const coinTypeBIndex = this.rammSuiPool.assetTypeIndices.get(this.coinTypeB)!;
-        const coinTypeBDecimals: number = this.rammSuiPool.assetConfigs[coinTypeBIndex].assetDecimalPlaces;
-
-        const estimate_amount_in = priceEstimationEventJSON.amount_in / ( 10 ** coinTypeADecimals);
-        const estimate_amount_out = priceEstimationEventJSON.amount_out / ( 10 ** coinTypeBDecimals);
-
-        const price = estimate_amount_out / estimate_amount_in;
-        const fee = priceEstimationEventJSON.protocol_fee / ( 10 ** coinTypeADecimals);
-
         return {
-            price,
-            fee
+            price: priceEstimationEventJSON.amount_out / priceEstimationEventJSON.amount_in,
+            fee: priceEstimationEventJSON.protocol_fee / ( 10 ** coinTypeADecimals)
         };
     }
 }
