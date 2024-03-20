@@ -1,8 +1,8 @@
-import { Spot } from '@binance/connector'
+import { Spot } from '@binance/connector-typescript'
 
 // Create a new Binance Spot client.
 const client = new Spot()
-
+    
 /**
  * Get the ticker price for a given symbol.
  * @param symbol The symbol to get the ticker price for.
@@ -10,9 +10,9 @@ const client = new Spot()
  */
 async function getTickerPrice(symbol: string): Promise<string> {
     // Get the ticker price for the given symbol.
-    const tickerPrice = await client.tickerPrice(symbol)
+    const tickerPrice: any = await client.symbolPriceTicker({symbol: symbol})
     // Return the price data.
-    return tickerPrice.data.price
+    return tickerPrice.price
 }
 
 /**
