@@ -48,6 +48,7 @@ const phrase = process.env.ADMIN_PHRASE
 export const keypair = Ed25519Keypair.deriveKeypair(phrase!)
 
 let capybot = new Capybot(keypair, 'mainnet')
+
 const cetusUSDCtoSUI = new CetusPool(
     '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
     coins.USDC,
