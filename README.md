@@ -55,7 +55,7 @@ In this release, Capy Trading Bot supports swap pools from [Cetus](https://www.c
 ## Installation
 
 1. Clone this repository.
-2. Install dependencies with `npm install`.
+2. Install dependencies with `yarn install`.
 
 ## Usage
 
@@ -182,9 +182,9 @@ The following parameters are required:
 
 ## Build and Run the Bot
 
-Build the project with `npm run build`
+Build the project with `yarn build`
 
-Run the script with `npm run start`
+Run the script with `yarn start`
 
 This will run the bot for one hour. To run the bot for longer you should change the `duration` value in the call to `capybot.loop` in `src/index.ts`.
 
