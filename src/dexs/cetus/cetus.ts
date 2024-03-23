@@ -6,7 +6,7 @@ import SDK, {
 } from '@cetusprotocol/cetus-sui-clmm-sdk/dist'
 
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
-import { TransactionBlock } from '@mysten/sui.js/transactions'
+import { TransactionBlock, TransactionObjectArgument } from '@mysten/sui.js/transactions'
 import { SUI_CLOCK_OBJECT_ID } from '@mysten/sui.js/utils';
 
 import { SuiNetworks } from '../types'
@@ -80,38 +80,57 @@ export class CetusPool extends Pool<CetusParams> {
             let functionName: string = ''
 
             const moveCall = txb.blockData.transactions.find((obj) => {
-                if (obj.kind === 'MoveCall') return obj.target
+                if (obj.kind === 'MoveCall') {
+                    console.log('MoveCall: ', obj);
+                    return obj.target
+                }
             })
 
             if (moveCall?.kind === 'MoveCall' && moveCall?.target) {
-                target = moveCall.target
+                target = moveCall.target;
                 ;[packageName, moduleName, functionName] = target.split('::')
+                console.log('packageName: ', packageName);
+                console.log('moduleName: ', moduleName);
+                console.log('functionName: ', functionName);
             }
 
             const inputs = txb.blockData.inputs
 
+            console.log('\nInputs: ', JSON.stringify(inputs, null, 2) + '\n')
+
             args = []
 
-            inputs.forEach((input) => {
-                if (
-                    input.kind === 'Input' &&
-                    (input.type === 'object' || input.type === 'pure')
-                )
-                    args.push(input.value)
+            inputs.forEach((input, index) => {
+                if (input.kind === 'Input' && (input.type === 'object' || input.type === 'pure')) {
+                    if (index === 1) {
+                        console.log('FIRST OFF FIRST OFF FIRST OFF FIRST');
+                        console.log('INPUT VALUE: ', input.value);
+                    }
+                    console.log('\nPUSHED INDEX: ' + index + '\n');
+                    args.push(input.value);
+                }
             })
 
-            if (moveCall?.kind === 'MoveCall' && moveCall?.typeArguments)
+            if (moveCall?.kind === 'MoveCall' && moveCall?.typeArguments) {
                 typeArguments = moveCall.typeArguments
+                console.log('typeArguments: ', typeArguments);
+            }
 
             let makeMoveVec = txb.blockData.transactions.find((obj) => {
-                if (obj.kind === 'MakeMoveVec') return obj
-            })
-            if (makeMoveVec?.kind === 'MakeMoveVec' && makeMoveVec?.objects)
+                if (obj.kind === 'MakeMoveVec') {
+                    console.log('one `MakeMoveVec`');
+                    return obj
+                }
+            });
+
+            if (makeMoveVec?.kind === 'MakeMoveVec' && makeMoveVec?.objects) {
                 coins = makeMoveVec.objects
                     .filter((obj) => obj.kind === 'Input' && obj.value)
                     .map((obj) =>
                         obj.kind === 'Input' && obj?.value ? obj.value : null
-                    )
+                    );
+                console.log('\ncreateSwapTransaction `coins`: ', coins + '\n');
+            }
 
             args = args.filter((item) => !coins.includes(item))
 
@@ -119,7 +138,7 @@ export class CetusPool extends Pool<CetusParams> {
                 target: `${packageName}::${moduleName}::${functionName}`,
                 arguments: [
                     transactionBlock.object(args[0]),
-                    transactionBlock.object(args[1]),
+                    transactionBlock.pure(args[1]),
                     transactionBlock.makeMoveVec({
                         objects: coins.map((id) => transactionBlock.object(id)),
                     }),
