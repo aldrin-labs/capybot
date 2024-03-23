@@ -73,6 +73,9 @@ export class Capybot {
                             { strategy: strategy.uri, decision: order },
                             'order'
                         )
+
+                        console.log('\nEstimated Price: ' + order.estimatedPrice + '\n');
+
                         let amountIn = Math.round(order.amountIn)
                         let amountOut = Math.round(
                             order.estimatedPrice * amountIn
@@ -81,7 +84,11 @@ export class Capybot {
                         const byAmountIn: boolean = true
                         const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
+                        console.log('\nCETUS AMOUNT IN: ' + amountIn + '\n');
+
                         if (this.pools[order.pool] instanceof CetusPool) {
+                            console.log('\nCETUS AMOUNT IN: ' + amountIn + '\n');
+
                             transactionBlock = await this.pools[
                                 order.pool
                             ].createSwapTransaction(transactionBlock, {
@@ -100,11 +107,14 @@ export class Capybot {
                             })
                         }
                     }
+
+                    //console.log('\ntxb from `capybot.loop`: ' + JSON.stringify(transactionBlock.blockData, null, 2) + '\n');
+
                     // Execute the transactions
-                    await this.executeTransactionBlock(
+/*                     await this.executeTransactionBlock(
                         transactionBlock,
                         strategy
-                    )
+                    ) */
                 }
             }
             await setTimeout(delay)

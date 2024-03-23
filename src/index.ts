@@ -23,24 +23,24 @@ export const coins = {
     WBTC: '0x027792d9fed7f9844eb4839566001bb6f6cb4804f66aa2da6fe1ee242d896881::coin::COIN',
 }
 
-// Setup default amount to trade for each token in each pool. Set to approximately 1 USD each.
+// Setup default amount to trade for each token in each pool. Set to approximately 0.1 USD each.
 export const defaultAmount: Record<string, number> = {}
-defaultAmount[coins.SUI] = 1_000_000_000
-defaultAmount[coins.USDC] = 1_000_000
-defaultAmount[coins.CETUS] = 15_000_000_000
-defaultAmount[coins.CETUS0] = 15_000_000_000
-defaultAmount[coins.BRT] = 150_000_000_000_000
-defaultAmount[coins.WETH] = 100_000
-defaultAmount[coins.TOCE] = 100_000_000_000
-defaultAmount[coins.USDT] = 1_000_000
-defaultAmount[coins.WBTC] = 3_000
+defaultAmount[coins.SUI] = 100_000_000
+defaultAmount[coins.USDC] = 100_000
+defaultAmount[coins.CETUS] = 1_500_000_000
+defaultAmount[coins.CETUS0] = 1_500_000_000
+defaultAmount[coins.BRT] = 15_000_000_000_000
+defaultAmount[coins.WETH] = 10_000
+defaultAmount[coins.TOCE] = 10_000_000_000
+defaultAmount[coins.USDT] = 100_000
+defaultAmount[coins.WBTC] = 300
 
 // A conservative upper limit on the max gas price per transaction block in SUI
 export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 
 const RIDE_THE_TREND_LIMIT = 1.000005
 // Arbitrage threshold - 0.5%, or above
-const ARBITRAGE_RELATIVE_LIMIT = 1.005
+const ARBITRAGE_RELATIVE_LIMIT = 1.0001
 const MARKET_DIFFERENCE_LIMIT = 1.01
 
 // Setup wallet from passphrase.
@@ -96,13 +96,11 @@ const rammSUItoUSDC = new RAMMPool(
 capybot.addPool(cetusUSDCtoSUI)
 //capybot.addPool(cetusCETUStoSUI)
 //capybot.addPool(cetusUSDCtoCETUS)
-capybot.addPool(cetusSUItoUSDT)
+//capybot.addPool(cetusSUItoUSDT)
 capybot.addPool(rammSUItoUSDC)
 // TODO: fix the way `capybot` stores pool information, so that a RAMM pool with over 2 assets
 // can be added more than once e.g. for its `SUI/USDC` and `SUI/USDT` pairs.
 //capybot.addPool(rammSUItoUSDT)
-
-capybot.addDataSource(new BinanceBTCtoUSDC())
 
 /* // Add triangular arbitrage strategy: USDC/SUI -> (CETUS/SUI)^-1 -> (USDC/CETUS)^-1.
 capybot.addStrategy(
