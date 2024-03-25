@@ -71,7 +71,6 @@ export class Capybot {
                     let tradeOrders = strategy.evaluate(data)
 
                     // Create transactions for the suggested trades
-                    transactionBlock = new TransactionBlock()
                     for (const order of tradeOrders) {
                         logger.info(
                             { strategy: strategy.uri, decision: order },
@@ -79,6 +78,7 @@ export class Capybot {
                         )
 
                         console.log('\nEstimated Price: ' + order.estimatedPrice + '\n');
+                        console.log('Order.pool: ' + order.pool + '\n');
 
                         let amountIn = Math.round(order.amountIn)
                         let amountOut = Math.round(
@@ -88,11 +88,8 @@ export class Capybot {
                         const byAmountIn: boolean = true
                         const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
-                        console.log('\nCETUS AMOUNT IN: ' + amountIn + '\n');
-
                         if (this.pools[order.pool] instanceof CetusPool) {
-                            console.log('\nCETUS AMOUNT IN: ' + amountIn + '\n');
-
+                            transactionBlock = new TransactionBlock();
                             transactionBlock = await this.pools[
                                 order.pool
                             ].createSwapTransaction(transactionBlock, {
@@ -101,24 +98,34 @@ export class Capybot {
                                 amountOut,
                                 byAmountIn,
                                 slippage,
-                            })
+                            });
+
+                            console.log('\nCetus PTB: ' + JSON.stringify(transactionBlock, null, 4) + '\n');
+
+/*                             // Execute the transaction
+                            await this.executeTransactionBlock(
+                                transactionBlock,
+                                this.pools[order.pool].keypair,
+                                strategy
+                            ); */
                         } else if (this.pools[order.pool] instanceof RAMMPool) {
+                            transactionBlock = new TransactionBlock();
                             transactionBlock = await this.pools[
                                 order.pool
                             ].createSwapTransaction(transactionBlock, {
                                 a2b,
                                 amountIn,
-                            })
+                            });
+
+                            console.log('\nRAMM Transaction Block: ' + JSON.stringify(transactionBlock, null, 4) + '\n');
+
+/*                             await this.executeTransactionBlock(
+                                transactionBlock,
+                                this.pools[order.pool].keypair,
+                                strategy
+                            ); */
                         }
                     }
-
-                    //console.log('\ntxb from `capybot.loop`: ' + JSON.stringify(transactionBlock.blockData, null, 2) + '\n');
-
-                    // Execute the transactions
-/*                     await this.executeTransactionBlock(
-                        transactionBlock,
-                        strategy
-                    ) */
                 }
             }
             await setTimeout(delay)

@@ -28,7 +28,7 @@ export abstract class Pool<
     /**
      * The keypair used to sign and execute PTBs for this pool
      */
-    private keypair: Keypair
+    public keypair: Keypair
     /**
      * The SUI address of the above keypair - since each pool will use its own keypair to avoid
      * coin object equivocation, this can also be used to uniquely identify each pool.
