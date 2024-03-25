@@ -21,17 +21,21 @@ const DEFAULT_GAS_BUDGET: number = 1.5 * (10 ** 9)
  */
 export class Capybot {
     public dataSources: Record<string, DataSource> = {}
+    /**
+     * A record of all the pools the bot is subscribed to.
+     *
+     * The key is the address of the *keypair* used to sign & execute transactions to be sent to
+     * that pool.
+     */
     public pools: Record<
         string,
         Pool<CetusParams | TurbosParams | RAMMSuiParams>
     > = {}
     public strategies: Record<string, Array<Strategy>> = {}
-    private keypair: Keypair
     private suiClient: SuiClient
     private network: SuiNetworks;
 
-    constructor(keypair: Keypair, network: SuiNetworks) {
-        this.keypair = keypair
+    constructor(network: SuiNetworks) {
         this.network = network
         this.suiClient = new SuiClient({url: getFullnodeUrl(network)})
     }
@@ -123,6 +127,7 @@ export class Capybot {
 
     private async executeTransactionBlock(
         transactionBlock: TransactionBlock,
+        keypair: Keypair,
         strategy: Strategy
     ) {
         if (transactionBlock.blockData.transactions.length !== 0) {
@@ -130,7 +135,7 @@ export class Capybot {
                 transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
                 let result = await this.suiClient.signAndExecuteTransactionBlock({
                     transactionBlock,
-                    signer: this.keypair,
+                    signer: keypair,
                     options: {
                         showObjectChanges: true,
                         showEffects: true,
@@ -172,10 +177,10 @@ export class Capybot {
 
     /** Add a new pool for this bot to use for trading. */
     addPool(pool: Pool<CetusParams | RAMMSuiParams | TurbosParams>) {
-        if (this.pools.hasOwnProperty(pool.uri)) {
-            throw new Error('Pool ' + pool.uri + ' has already been added.')
+        if (this.pools.hasOwnProperty(pool.senderAddress)) {
+            throw new Error('Pool ' + pool.senderAddress + ' has already been added.')
         }
-        this.pools[pool.uri] = pool
+        this.pools[pool.senderAddress] = pool
         this.addDataSource(pool)
     }
 }

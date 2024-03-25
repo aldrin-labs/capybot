@@ -2,6 +2,7 @@ import { TransactionBlock } from '@mysten/sui.js/transactions'
 import { DataPoint, DataType } from '../data_sources/data_point'
 import { DataSource } from '../data_sources/data_source'
 import { CetusParams, RAMMSuiParams, TurbosParams } from './dexsParams'
+import { Keypair } from '@mysten/sui.js/cryptography'
 
 export type PreswapResult = {
     estimatedAmountIn: number
@@ -25,15 +26,29 @@ export abstract class Pool<
     public coinTypeB: string
 
     /**
+     * The keypair used to sign and execute PTBs for this pool
+     */
+    private keypair: Keypair
+    /**
+     * The SUI address of the above keypair - since each pool will use its own keypair to avoid
+     * coin object equivocation, this can also be used to uniquely identify each pool.
+     */
+    public senderAddress: string
+
+
+    /**
      * Creates an instance of Pool.
      * @param address The address of the pool.
      * @param coinTypeA The coin type A for the pool.
      * @param coinTypeB The coin type B for the pool.
      */
-    constructor(address: string, coinTypeA: string, coinTypeB: string) {
+    constructor(address: string, coinTypeA: string, coinTypeB: string, keypair: Keypair) {
         super(address)
         this.coinTypeA = coinTypeA
         this.coinTypeB = coinTypeB
+
+        this.keypair = keypair
+        this.senderAddress = keypair.getPublicKey().toSuiAddress()
     }
 
     /**

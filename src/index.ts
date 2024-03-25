@@ -39,49 +39,33 @@ defaultAmount[coins.WBTC] = 300
 export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 
 const RIDE_THE_TREND_LIMIT = 1.000005
-// Arbitrage threshold - 0.5%, or above
-const ARBITRAGE_RELATIVE_LIMIT = 1.0001
+// Arbitrage threshold - 0.05%, or above
+const ARBITRAGE_RELATIVE_LIMIT = 1.0005
 const MARKET_DIFFERENCE_LIMIT = 1.01
 
 // Setup wallet from passphrase.
-const phrase = process.env.ADMIN_PHRASE
-export const keypair = Ed25519Keypair.deriveKeypair(phrase!)
+const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
+export const cetusUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(cetusUsdcSuiPhrase!)
 
-let capybot = new Capybot(keypair, 'mainnet')
+const rammUsdcSuiPhrase = process.env.RAMM_SUI_USDC_ADMIN_PHRASE
+export const rammUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(rammUsdcSuiPhrase!)
+
+let capybot = new Capybot('mainnet')
 
 const cetusUSDCtoSUI = new CetusPool(
     '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
     coins.USDC,
     coins.SUI,
+    cetusUsdcSuiKeypair,
     'mainnet'
 )
 
-const cetusCETUStoSUI = new CetusPool(
-    "0x2e041f3fd93646dcc877f783c1f2b7fa62d30271bdef1f21ef002cebf857bded",
-    coins.CETUS,
-    coins.SUI,
-    'mainnet'
-);
-
-const cetusUSDCtoCETUS = new CetusPool(
-    "0x238f7e4648e62751de29c982cbf639b4225547c31db7bd866982d7d56fc2c7a8",
-    coins.USDC,
-    coins.CETUS,
-    'mainnet'
-);
-
-const cetusSUItoUSDT = new CetusPool(
-    '0xa96b0178e9d66635ce3576561429acfa925eb388683992288207dbfffde94b65',
-    coins.SUI,
-    coins.USDT,
-    'mainnet'
-);
-
-const rammSUItoUSDC = new RAMMPool(
+const rammUSDCtoSUI = new RAMMPool(
     rammSuiConfigs[SuiSupportedNetworks.mainnet][0],
     '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
-    coins.SUI,
     coins.USDC,
+    coins.SUI,
+    rammUsdcSuiKeypair,
     'mainnet'
 )
 
@@ -94,36 +78,10 @@ const rammSUItoUSDC = new RAMMPool(
 ) */
 
 capybot.addPool(cetusUSDCtoSUI)
-//capybot.addPool(cetusCETUStoSUI)
-//capybot.addPool(cetusUSDCtoCETUS)
-//capybot.addPool(cetusSUItoUSDT)
-capybot.addPool(rammSUItoUSDC)
+capybot.addPool(rammUSDCtoSUI)
 // TODO: fix the way `capybot` stores pool information, so that a RAMM pool with over 2 assets
 // can be added more than once e.g. for its `SUI/USDC` and `SUI/USDT` pairs.
 //capybot.addPool(rammSUItoUSDT)
-
-/* // Add triangular arbitrage strategy: USDC/SUI -> (CETUS/SUI)^-1 -> (USDC/CETUS)^-1.
-capybot.addStrategy(
-    new Arbitrage(
-        [
-            {
-                pool: cetusUSDCtoSUI.uri,
-                a2b: false,
-            },
-            {
-                pool: cetusUSDCtoCETUS.uri,
-                a2b: true,
-            },
-            {
-                pool: cetusCETUStoSUI.uri,
-                a2b: true,
-            },
-        ],
-        defaultAmount[coins.SUI],
-        ARBITRAGE_RELATIVE_LIMIT,
-        "Arbitrage: SUI -Cetus-> USDC -Cetus-> CETUS -Cetus-> SUI"
-    )
-); */
 
 // Add arbitrage strategy: USDC/SUI -> SUI/USDC
 capybot.addStrategy(
@@ -134,8 +92,8 @@ capybot.addStrategy(
                 a2b: false,
             },
             {
-                pool: rammSUItoUSDC.uri,
-                a2b: false,
+                pool: rammUSDCtoSUI.uri,
+                a2b: true,
             }
         ],
         defaultAmount[coins.SUI],
