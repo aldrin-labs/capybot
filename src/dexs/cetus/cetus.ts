@@ -6,19 +6,19 @@ import SDK, {
 } from '@cetusprotocol/cetus-sui-clmm-sdk/dist'
 
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
-import { TransactionBlock, TransactionObjectArgument } from '@mysten/sui.js/transactions'
-import { SUI_CLOCK_OBJECT_ID } from '@mysten/sui.js/utils';
+import { Keypair } from '@mysten/sui.js/cryptography'
+import { TransactionBlock } from '@mysten/sui.js/transactions'
 
 import { SuiNetworks } from '../types'
 
 import BN from 'bn.js'
 import { getCoinInfo } from '../../coins/coins'
-import { keypair } from '../../index'
 import { getTotalBalanceByCoinType } from '../../utils/utils'
 import { CetusParams } from '../dexsParams'
 import { Pool, PreswapResult } from '../pool'
 import { clmmMainnet } from './mainnet_config'
 import { logger } from '../../logger'
+
 
 function buildSdkOptions(network: SuiNetworks): SdkOptions {
     switch (network) {
@@ -32,17 +32,21 @@ function buildSdkOptions(network: SuiNetworks): SdkOptions {
 export class CetusPool extends Pool<CetusParams> {
     private sdk: SDK
     private suiClient: SuiClient
-    private senderAddress: string
     private network: SuiNetworks
 
-    constructor(address: string, coinTypeA: string, coinTypeB: string, network: SuiNetworks) {
-        super(address, coinTypeA, coinTypeB)
+    constructor(
+        poolAddress: string,
+        coinTypeA: string,
+        coinTypeB: string,
+        keypair: Keypair,
+        network: SuiNetworks
+    ) {
+        super(poolAddress, coinTypeA, coinTypeB, keypair)
         this.network = network
         this.sdk = new SDK(buildSdkOptions(this.network))
 
         this.sdk.senderAddress = keypair.getPublicKey().toSuiAddress()
-        this.suiClient = new SuiClient({url: getFullnodeUrl(network)})
-        this.senderAddress = keypair.getPublicKey().toSuiAddress()
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
     }
 
     /**
@@ -70,88 +74,7 @@ export class CetusPool extends Pool<CetusParams> {
         if (params.amountIn > 0 && Number(totalBalance) >= params.amountIn) {
             const txb = await this.createCetusTransactionBlockWithSDK(params)
 
-            let target = ''
-            let args: string[] = []
-            let typeArguments: string[] = []
-            let coins: string[] = []
-
-            let packageName: string = ''
-            let moduleName: string = ''
-            let functionName: string = ''
-
-            const moveCall = txb.blockData.transactions.find((obj) => {
-                if (obj.kind === 'MoveCall') {
-                    console.log('MoveCall: ', obj);
-                    return obj.target
-                }
-            })
-
-            if (moveCall?.kind === 'MoveCall' && moveCall?.target) {
-                target = moveCall.target;
-                ;[packageName, moduleName, functionName] = target.split('::')
-                console.log('packageName: ', packageName);
-                console.log('moduleName: ', moduleName);
-                console.log('functionName: ', functionName);
-            }
-
-            const inputs = txb.blockData.inputs
-
-            console.log('\nInputs: ', JSON.stringify(inputs, null, 2) + '\n')
-
-            args = []
-
-            inputs.forEach((input, index) => {
-                if (input.kind === 'Input' && (input.type === 'object' || input.type === 'pure')) {
-                    if (index === 1) {
-                        console.log('FIRST OFF FIRST OFF FIRST OFF FIRST');
-                        console.log('INPUT VALUE: ', input.value);
-                    }
-                    console.log('\nPUSHED INDEX: ' + index + '\n');
-                    args.push(input.value);
-                }
-            })
-
-            if (moveCall?.kind === 'MoveCall' && moveCall?.typeArguments) {
-                typeArguments = moveCall.typeArguments
-                console.log('typeArguments: ', typeArguments);
-            }
-
-            let makeMoveVec = txb.blockData.transactions.find((obj) => {
-                if (obj.kind === 'MakeMoveVec') {
-                    console.log('one `MakeMoveVec`');
-                    return obj
-                }
-            });
-
-            if (makeMoveVec?.kind === 'MakeMoveVec' && makeMoveVec?.objects) {
-                coins = makeMoveVec.objects
-                    .filter((obj) => obj.kind === 'Input' && obj.value)
-                    .map((obj) =>
-                        obj.kind === 'Input' && obj?.value ? obj.value : null
-                    );
-                console.log('\ncreateSwapTransaction `coins`: ', coins + '\n');
-            }
-
-            args = args.filter((item) => !coins.includes(item))
-
-            transactionBlock.moveCall({
-                target: `${packageName}::${moduleName}::${functionName}`,
-                arguments: [
-                    transactionBlock.object(args[0]),
-                    transactionBlock.pure(args[1]),
-                    transactionBlock.makeMoveVec({
-                        objects: coins.map((id) => transactionBlock.object(id)),
-                    }),
-                    transactionBlock.pure(args[2]),
-                    transactionBlock.pure(args[3]),
-                    transactionBlock.pure(args[4]),
-                    transactionBlock.pure(args[5]),
-                    transactionBlock.object(SUI_CLOCK_OBJECT_ID),
-                ],
-                typeArguments,
-            })
-
-            return transactionBlock
+            return txb
         }
         return transactionBlock
     }
