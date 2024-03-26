@@ -8,7 +8,9 @@ import { RAMMSuiParams } from '../dexsParams'
 import { Pool } from '../pool'
 
 import { RAMMSuiPool, RAMMSuiPoolConfig, PriceEstimationEvent } from '@ramm/ramm-sui-sdk'
+import { Coin } from '../../coins'
 import { logger } from '../../logger'
+
 
 export class RAMMPool extends Pool<RAMMSuiParams> {
     private rammSuiPool: RAMMSuiPool
@@ -22,12 +24,12 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
     constructor(
         rammConfig: RAMMSuiPoolConfig,
         address: string,
-        coinTypeA: string,
-        coinTypeB: string,
+        coinA: Coin,
+        coinB: Coin,
         keypair: Keypair,
         network: SuiNetworks
     ) {
-        super(address, coinTypeA, coinTypeB)
+        super(address, coinA, coinB)
         this.rammSuiPool = new RAMMSuiPool(rammConfig)
         this.senderAddress = keypair.getPublicKey().toSuiAddress()
 
@@ -158,8 +160,8 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         }
 
         const { assetIn, assetOut } = params.a2b
-            ? { assetIn: this.coinTypeA, assetOut: this.coinTypeB }
-            : { assetIn: this.coinTypeB, assetOut: this.coinTypeA }
+            ? { assetIn: this.coinA.type, assetOut: this.coinB.type }
+            : { assetIn: this.coinB.type, assetOut: this.coinA.type }
 
         try {
             const { newCoinObj } = await this.prepareCoinForPaymentCommon(
@@ -192,20 +194,14 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         price: number
         fee: number
     }> {
-        const coinTypeAIndex = this.rammSuiPool.assetTypeIndices.get(
-            this.coinTypeA
-        )!
-        const coinTypeADecimals: number =
-            this.rammSuiPool.assetConfigs[coinTypeAIndex].assetDecimalPlaces
-
         const estimate_txb: TransactionBlock =
             this.rammSuiPool.estimatePriceWithAmountIn({
-                assetIn: this.coinTypeA,
-                assetOut: this.coinTypeB,
+                assetIn: this.coinA.type,
+                assetOut: this.coinB.type,
                 // TODO this can be changed to reflect the actual amount being traded.
                 // For a prototype, choosing to trade one unit of the currency will give a usable
                 // approximation.
-                amountIn: 1 * 10 ** coinTypeADecimals,
+                amountIn: 1 * 10 ** this.coinA.decimals,
             })
 
         const devInspectRes = await this.suiClient.devInspectTransactionBlock({
@@ -236,7 +232,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
                 priceEstimationEventJSON.amount_out /
                 priceEstimationEventJSON.amount_in,
             fee:
-                priceEstimationEventJSON.protocol_fee / 10 ** coinTypeADecimals,
+                priceEstimationEventJSON.protocol_fee / 10 ** this.coinA.decimals,
         }
     }
 }

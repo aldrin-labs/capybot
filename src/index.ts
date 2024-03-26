@@ -3,6 +3,7 @@ import { Keypair } from '@mysten/sui.js/cryptography'
 import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
 
 import { Capybot } from './capybot'
+import { Coin, Assets } from './coins'
 import { CetusPool } from './dexs/cetus/cetus'
 import { Arbitrage } from './strategies/arbitrage'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
@@ -77,8 +78,8 @@ let capybot = new Capybot('mainnet')
 
 const cetusUSDCtoSUI = new CetusPool(
     '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
-    coins.USDC,
-    coins.SUI,
+    Assets.USDC,
+    Assets.SUI,
     cetusUsdcSuiKeypair,
     'mainnet'
 )
@@ -86,8 +87,8 @@ const cetusUSDCtoSUI = new CetusPool(
 const rammUSDCtoSUI = new RAMMPool(
     rammSuiConfigs[SuiSupportedNetworks.mainnet][0],
     '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
-    coins.USDC,
-    coins.SUI,
+    Assets.USDC,
+    Assets.SUI,
     rammUsdcSuiKeypair,
     'mainnet'
 )
@@ -112,7 +113,7 @@ console.log('RAMM UUID: ' + rammUSDCtoSUI.uuid);
 
 
 
-// Add arbitrage strategy: USDC/SUI -> SUI/USDC
+// Add arbitrage strategy: SUI/USDC -> USDC/SUI
 capybot.addStrategy(
     new Arbitrage(
         [

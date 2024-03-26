@@ -1,8 +1,9 @@
 import { TransactionBlock } from '@mysten/sui.js/transactions'
+
+import { Coin } from '../coins'
 import { DataPoint, DataType } from '../data_sources/data_point'
 import { DataSource } from '../data_sources/data_source'
 import { CetusParams, RAMMSuiParams, TurbosParams } from './dexsParams'
-import { Keypair } from '@mysten/sui.js/cryptography'
 
 import { v5 as uuidv5 } from 'uuid'
 
@@ -21,11 +22,11 @@ export abstract class Pool<
     /**
      * The coin type A for the pool.
      */
-    public coinTypeA: string
+    public coinA: Coin
     /**
      * The coin type B for the pool.
      */
-    public coinTypeB: string
+    public coinB: Coin
 
     /**
      * Namespace used to created UUIDs for pools using `uuid.v5()` - see
@@ -53,11 +54,14 @@ export abstract class Pool<
     /**
      * Creates an instance of Pool.
      * @param address The address of the pool.
-     * @param coinTypeA The coin type A for the pool.
-     * @param coinTypeB The coin type B for the pool.
+     * @param coinA The coin type A for the pool.
+     * @param coinB The coin type B for the pool.
      */
-    constructor(address: string, coinTypeA: string, coinTypeB: string) {
+    constructor(address: string, coinA: Coin, coinB: Coin) {
         const types: string[] = [address];
+        const coinTypeA = coinA.type
+        const coinTypeB = coinB.type
+
         if (coinTypeA < coinTypeB) {
             types.push(...[coinTypeA, coinTypeB])
         } else {
@@ -69,8 +73,8 @@ export abstract class Pool<
         this.uuid = uuid
 
         this.address = address
-        this.coinTypeA = coinTypeA
-        this.coinTypeB = coinTypeB
+        this.coinA = coinA
+        this.coinB = coinB
 
     }
 
@@ -103,8 +107,8 @@ export abstract class Pool<
         return {
             type: DataType.Price,
             source_uri: this.uri,
-            coinTypeFrom: this.coinTypeA,
-            coinTypeTo: this.coinTypeB,
+            coinTypeFrom: this.coinA.type,
+            coinTypeTo: this.coinB.type,
             price: priceAndFee.price,
             fee: priceAndFee.fee,
         }
