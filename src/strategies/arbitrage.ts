@@ -1,9 +1,12 @@
 import { DataPoint, DataType } from '../data_sources/data_point'
 import { Strategy } from './strategy'
 import { TradeOrder } from './order'
+import { Coin } from '../coins'
 
 type PoolWithDirection = {
-    pool_uuid: string
+    poolUuid: string
+    coinA: Coin
+    coinB: Coin
     a2b: boolean
 }
 
@@ -38,7 +41,7 @@ export class Arbitrage extends Strategy {
         this.lowerLimit = relativeLimit
         // A short string representation of the pools used. Used for logging and debugging
         this.poolChainAsString = this.poolChain
-            .map((p) => p.pool_uuid.substring(0, 8))
+            .map((p) => p.poolUuid.substring(0, 8))
             .toString()
     }
 
@@ -46,7 +49,7 @@ export class Arbitrage extends Strategy {
         // This strategy is only interested in the price from the pools it's observing
         if (
             data.type != DataType.Price ||
-            !this.poolChain.map((p) => p.pool_uuid).includes(data.source_uri)
+            !this.poolChain.map((p) => p.poolUuid).includes(data.source_uri)
         ) {
             return []
         }
@@ -59,13 +62,13 @@ export class Arbitrage extends Strategy {
         let arbitrage = 1
         let arbitrageReverse = 1
         for (const pool of this.poolChain) {
-            let rate = this.getLatestRate(pool.pool_uuid, pool.a2b)
+            let rate = this.getLatestRate(pool.poolUuid, pool.a2b)
             if (rate == undefined) {
                 // Not all pools have a registered value yet.
                 return []
             }
-            arbitrage *= (1 - this.latestFee[pool.pool_uuid]) * rate
-            arbitrageReverse *= (1 - this.latestFee[pool.pool_uuid]) * (1 / rate)
+            arbitrage *= (1 - this.latestFee[pool.poolUuid]) * rate
+            arbitrageReverse *= (1 - this.latestFee[pool.poolUuid]) * (1 / rate)
         }
         this.logStatus({ arbitrage: arbitrage, reverse: arbitrageReverse })
 
@@ -74,9 +77,10 @@ export class Arbitrage extends Strategy {
             let orders = []
             let amountIn: number = this.defaultAmount
             for (const pool of this.poolChain) {
-                let latestRate = this.getLatestRate(pool.pool_uuid, pool.a2b)
+                let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
                 orders.push({
-                    pool_uuid: pool.pool_uuid,
+                    poolUuid: pool.poolUuid,
+                    assetIn: pool.a2b ? pool.coinA.type : pool.coinB.type,
                     amountIn: amountIn,
                     estimatedPrice: latestRate,
                     a2b: pool.a2b,
@@ -89,9 +93,10 @@ export class Arbitrage extends Strategy {
             let orders = []
             let amount: number = this.defaultAmount
             for (const pool of this.poolChain.reverse()) {
-                let latestRate = this.getLatestRate(pool.pool_uuid, !pool.a2b)
+                let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
                 orders.push({
-                    pool_uuid: pool.pool_uuid,
+                    poolUuid: pool.poolUuid,
+                    assetIn: !pool.a2b ? pool.coinB.type : pool.coinA.type,
                     amountIn: amount,
                     estimatedPrice: latestRate,
                     a2b: !pool.a2b,
@@ -106,7 +111,7 @@ export class Arbitrage extends Strategy {
     }
 
     subscribes_to(): Array<string> {
-        return this.poolChain.map((value) => value.pool_uuid)
+        return this.poolChain.map((value) => value.poolUuid)
     }
 
     getLatestRate(pool: string, a2b: boolean): number {

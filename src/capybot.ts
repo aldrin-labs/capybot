@@ -96,7 +96,7 @@ export class Capybot {
                         console.log(
                             '\nEstimated Price: ' + order.estimatedPrice + '\n'
                         )
-                        console.log('Order.pool: ' + order.pool_uuid + '\n')
+                        console.log('Order.pool: ' + order.poolUuid + '\n')
 
                         let amountIn = Math.round(order.amountIn)
                         let amountOut = Math.round(
@@ -106,10 +106,10 @@ export class Capybot {
                         const byAmountIn: boolean = true
                         const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
-                        if (this.pools[order.pool_uuid] instanceof CetusPool) {
+                        if (this.pools[order.poolUuid] instanceof CetusPool) {
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
-                                order.pool_uuid
+                                order.poolUuid
                             ].createSwapTransaction(transactionBlock, {
                                 a2b,
                                 amountIn,
@@ -118,32 +118,32 @@ export class Capybot {
                                 slippage,
                             })
 
-                            console.log('\nCetus UUID: ' + order.pool_uuid)
+                            console.log('\nCetus UUID: ' + order.poolUuid)
                             console.log('Trade amount: ' + order.amountIn)
                             console.log('Inbound asset:' + order.a2b)
 
                             // Execute the transaction
 /*                             await this.executeTransactionBlock(
                                 transactionBlock,
-                                this.poolKeypairs[order.pool_uuid],
+                                this.poolKeypairs[order.poolUuid],
                                 strategy
                             ); */
-                        } else if (this.pools[order.pool_uuid] instanceof RAMMPool) {
+                        } else if (this.pools[order.poolUuid] instanceof RAMMPool) {
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
-                                order.pool_uuid
+                                order.poolUuid
                             ].createSwapTransaction(transactionBlock, {
                                 a2b,
                                 amountIn,
                             })
 
-                            console.log('\nRAMM UUID: ' + order.pool_uuid);
+                            console.log('\nRAMM UUID: ' + order.poolUuid);
                             console.log('Trade amount: ' + order.amountIn);
                             console.log('Inbound asset:' + order.a2b)
 
 /*                             await this.executeTransactionBlock(
                                 transactionBlock,
-                                this.poolKeypairs[order.pool_uuid],
+                                this.poolKeypairs[order.poolUuid],
                                 strategy
                             ); */
                         }

@@ -1,5 +1,6 @@
 export type TradeOrder = {
-    pool_uuid: string
+    poolUuid: string
+    assetIn: string
     amountIn: number
     estimatedPrice: number
     a2b: boolean

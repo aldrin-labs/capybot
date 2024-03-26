@@ -2,6 +2,7 @@ import { DataPoint, DataType } from '../data_sources/data_point'
 import { average } from 'simple-statistics'
 import { Strategy } from './strategy'
 import { TradeOrder } from './order'
+import { Coin } from '../coins'
 
 /**
  * If the price of a token from some data source, say an exchange, looks like it's going into a period where it's price is increasing we
@@ -12,6 +13,8 @@ export class RideTheExternalTrend extends Strategy {
     private readonly long: number
     private lastDecision: number = 0
     private readonly pool: string
+    private readonly coinA: Coin
+    private readonly coinB: Coin
     private latestPoolPrice: number = 0
 
     private history: Array<number> = []
@@ -33,6 +36,8 @@ export class RideTheExternalTrend extends Strategy {
      */
     constructor(
         pool: string,
+        coinA: Coin,
+        coinB: Coin,
         data_source: string,
         short: number,
         long: number,
@@ -48,6 +53,8 @@ export class RideTheExternalTrend extends Strategy {
             short: short,
             long: long,
         })
+        this.coinA = coinA
+        this.coinB = coinB
         this.short = short
         this.long = long
         this.pool = pool
@@ -118,7 +125,8 @@ export class RideTheExternalTrend extends Strategy {
                 this.lastDecision = 0
                 return [
                     {
-                        pool_uuid: this.pool,
+                        poolUuid: this.pool,
+                        assetIn: this.coinA.type,
                         amountIn: this.defaultAmounts[0],
                         estimatedPrice: this.latestPoolPrice,
                         a2b: true,
@@ -135,7 +143,8 @@ export class RideTheExternalTrend extends Strategy {
 
                 return [
                     {
-                        pool_uuid: this.pool,
+                        poolUuid: this.pool,
+                        assetIn: this.coinB.type,
                         amountIn: this.defaultAmounts[1],
                         estimatedPrice: 1 / this.latestPoolPrice,
                         a2b: false,

@@ -2,9 +2,10 @@ import { DataPoint, DataType } from '../data_sources/data_point'
 import { average } from 'simple-statistics'
 import { Strategy } from './strategy'
 import { TradeOrder } from './order'
+import { Coin } from '../coins'
 
 /**
- * If the price of a token looks like it's going into a period where it's price is increasing we should buy the token.
+ * If the price of a token looks like it's going into a period where its price is increasing we should buy the token.
  * This is determined by comparing a short moving average to a longer moving average.
  */
 export class RideTheTrend extends Strategy {
@@ -12,6 +13,8 @@ export class RideTheTrend extends Strategy {
     private readonly long: number
     private lastDecision: number = 0
     private readonly pool: string
+    private readonly coinA: Coin
+    private readonly coinB: Coin
 
     private history: Array<number> = []
     private readonly limit: number
@@ -29,6 +32,8 @@ export class RideTheTrend extends Strategy {
      */
     constructor(
         pool: string,
+        coinA: Coin,
+        coinB: Coin,
         short: number,
         long: number,
         defaultAmounts: [number, number],
@@ -41,6 +46,8 @@ export class RideTheTrend extends Strategy {
             short: short,
             long: long,
         })
+        this.coinA = coinA
+        this.coinB = coinB
         this.short = short
         this.long = long
         this.pool = pool
@@ -94,7 +101,8 @@ export class RideTheTrend extends Strategy {
                 this.lastDecision = 0
                 return [
                     {
-                        pool_uuid: this.pool,
+                        poolUuid: this.pool,
+                        assetIn: this.coinA.type,
                         amountIn: this.defaultAmounts[0],
                         estimatedPrice: price,
                         a2b: true,
@@ -105,7 +113,8 @@ export class RideTheTrend extends Strategy {
                 this.lastDecision = 0
                 return [
                     {
-                        pool_uuid: this.pool,
+                        poolUuid: this.pool,
+                        assetIn: this.coinB.type,
                         amountIn: this.defaultAmounts[1],
                         estimatedPrice: 1 / price,
                         a2b: false,
