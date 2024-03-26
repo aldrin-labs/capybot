@@ -1,10 +1,10 @@
-import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
+import { SuiClient } from '@mysten/sui.js/client'
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography/keypair'
 import { TransactionBlock } from '@mysten/sui.js/transactions'
 
 import { setTimeout } from 'timers/promises'
 import { DataSource } from './data_sources/data_source'
-import { SuiNetworks } from './dexs/types'
+import { SuiNetworks, getFullnodeUrl } from './networks'
 import { CetusPool } from './dexs/cetus/cetus'
 import { CetusParams, RAMMSuiParams, TurbosParams } from './dexs/dexsParams'
 import { Pool } from './dexs/pool'
@@ -12,8 +12,8 @@ import { logger } from './logger'
 import { Strategy } from './strategies/strategy'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
 
-// Default gas budget: 1.5 `SUI`
-const DEFAULT_GAS_BUDGET: number = 1.5 * (10 ** 9)
+// Default gas budget: 0.5 `SUI`
+const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
 
 /**
  * A simple trading bot which subscribes to a number of trading pools across different DEXs. The bot may use multiple
@@ -24,20 +24,27 @@ export class Capybot {
     /**
      * A record of all the pools the bot is subscribed to.
      *
-     * The key is the address of the *keypair* used to sign & execute transactions to be sent to
-     * that pool.
+     * The key is the UUID (a.k.a. URI) of the pool, and the value is the pool object.
      */
     public pools: Record<
         string,
         Pool<CetusParams | TurbosParams | RAMMSuiParams>
     > = {}
+
+    /**
+     * A record of the keypairs each pool uses to sign its transactions.
+     *
+     * The key is the address of the pool, and the value is the keypair object.
+     */
+    public poolKeypairs: Record<string, Keypair> = {}
+
     public strategies: Record<string, Array<Strategy>> = {}
     private suiClient: SuiClient
-    private network: SuiNetworks;
+    private network: SuiNetworks
 
     constructor(network: SuiNetworks) {
         this.network = network
-        this.suiClient = new SuiClient({url: getFullnodeUrl(network)})
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
     }
 
     async loop(duration: number, delay: number) {
@@ -77,8 +84,10 @@ export class Capybot {
                             'order'
                         )
 
-                        console.log('\nEstimated Price: ' + order.estimatedPrice + '\n');
-                        console.log('Order.pool: ' + order.pool + '\n');
+                        console.log(
+                            '\nEstimated Price: ' + order.estimatedPrice + '\n'
+                        )
+                        console.log('Order.pool: ' + order.pool_uuid + '\n')
 
                         let amountIn = Math.round(order.amountIn)
                         let amountOut = Math.round(
@@ -88,40 +97,53 @@ export class Capybot {
                         const byAmountIn: boolean = true
                         const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
-                        if (this.pools[order.pool] instanceof CetusPool) {
-                            transactionBlock = new TransactionBlock();
+                        if (this.pools[order.pool_uuid] instanceof CetusPool) {
+                            transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
-                                order.pool
+                                order.pool_uuid
                             ].createSwapTransaction(transactionBlock, {
                                 a2b,
                                 amountIn,
                                 amountOut,
                                 byAmountIn,
                                 slippage,
-                            });
+                            })
 
-                            console.log('\nCetus PTB: ' + JSON.stringify(transactionBlock, null, 4) + '\n');
+                            console.log('\nCetus UUID: ' + order.pool_uuid)
+                            console.log('Trade amount: ' + order.amountIn)
+                            console.log('Inbound asset:' + order.a2b)
+                            console.log(
+                                '\nCetus PTB: ' +
+                                    JSON.stringify(transactionBlock, null, 4) +
+                                    '\n'
+                            )
 
-/*                             // Execute the transaction
-                            await this.executeTransactionBlock(
+                            // Execute the transaction
+/*                             await this.executeTransactionBlock(
                                 transactionBlock,
-                                this.pools[order.pool].keypair,
+                                this.poolKeypairs[order.pool_uuid],
                                 strategy
                             ); */
-                        } else if (this.pools[order.pool] instanceof RAMMPool) {
-                            transactionBlock = new TransactionBlock();
+                        } else if (this.pools[order.pool_uuid] instanceof RAMMPool) {
+                            transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
-                                order.pool
+                                order.pool_uuid
                             ].createSwapTransaction(transactionBlock, {
                                 a2b,
                                 amountIn,
-                            });
+                            })
 
-                            console.log('\nRAMM Transaction Block: ' + JSON.stringify(transactionBlock, null, 4) + '\n');
+                            console.log('\nRAMM UUID: ' + order.pool_uuid);
+                            console.log('Trade amount: ' + order.amountIn);
+                            console.log(
+                                '\nRAMM Transaction Block: ' +
+                                    JSON.stringify(transactionBlock, null, 4) +
+                                    '\n'
+                            )
 
 /*                             await this.executeTransactionBlock(
                                 transactionBlock,
-                                this.pools[order.pool].keypair,
+                                this.poolKeypairs[order.pool_uuid],
                                 strategy
                             ); */
                         }
@@ -140,14 +162,15 @@ export class Capybot {
         if (transactionBlock.blockData.transactions.length !== 0) {
             try {
                 transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
-                let result = await this.suiClient.signAndExecuteTransactionBlock({
-                    transactionBlock,
-                    signer: keypair,
-                    options: {
-                        showObjectChanges: true,
-                        showEffects: true,
-                    },
-                })
+                let result =
+                    await this.suiClient.signAndExecuteTransactionBlock({
+                        transactionBlock,
+                        signer: keypair,
+                        options: {
+                            showObjectChanges: true,
+                            showEffects: true,
+                        },
+                    })
                 logger.info(
                     { strategy: strategy, transaction: result },
                     'transaction'
@@ -183,11 +206,23 @@ export class Capybot {
     }
 
     /** Add a new pool for this bot to use for trading. */
-    addPool(pool: Pool<CetusParams | RAMMSuiParams | TurbosParams>) {
-        if (this.pools.hasOwnProperty(pool.senderAddress)) {
-            throw new Error('Pool ' + pool.senderAddress + ' has already been added.')
+    addPool(
+        pool: Pool<CetusParams | RAMMSuiParams | TurbosParams>,
+        keypair: Keypair
+    ) {
+        if (this.pools.hasOwnProperty(pool.uuid)) {
+            const errMsg: string =
+                'Pool ' +
+                pool.uri +
+                ' has already been added with asset pair: ' +
+                pool.coinTypeA +
+                '/' +
+                pool.coinTypeB
+            throw new Error(errMsg)
         }
-        this.pools[pool.senderAddress] = pool
+
+        this.pools[pool.uri] = pool
+        this.poolKeypairs[pool.uri] = keypair
         this.addDataSource(pool)
     }
 }

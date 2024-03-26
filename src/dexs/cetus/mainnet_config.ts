@@ -1,5 +1,7 @@
 import { SdkOptions } from "@cetusprotocol/cetus-sui-clmm-sdk";
 
+import { SUI_MAINNET_RPC_URL } from '../../networks'
+
 const SDKConfig = {
     clmmConfig: {
         pools_id: '0xf699e7f2276f5c9a75944b37a0c5b5d9ddfd2471bf6242483b03ab2887d198d0',
@@ -22,7 +24,7 @@ const SDKConfig = {
 // mainnet
 
 export const clmmMainnet: SdkOptions = {
-    fullRpcUrl: 'https://sui-mainnet-rpc.allthatnode.com',
+    fullRpcUrl: SUI_MAINNET_RPC_URL,
     swapCountUrl: 'https://api-sui.cetus.zone/v2/sui/swap/count',
     simulationAccount: {
         address:

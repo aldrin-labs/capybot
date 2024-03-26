@@ -2,7 +2,7 @@ import { CoinStruct, SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
 import { Keypair } from '@mysten/sui.js/cryptography'
 import { TransactionBlock, TransactionObjectArgument } from '@mysten/sui.js/transactions'
 
-import { SuiNetworks } from '../types'
+import { SuiNetworks } from '../../networks'
 
 import { RAMMSuiParams } from '../dexsParams'
 import { Pool } from '../pool'
@@ -17,6 +17,8 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
     private static readonly SUI_ADDRESS_LONG: string =
         '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'
 
+    public senderAddress: string
+
     constructor(
         rammConfig: RAMMSuiPoolConfig,
         address: string,
@@ -25,7 +27,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         keypair: Keypair,
         network: SuiNetworks
     ) {
-        super(address, coinTypeA, coinTypeB, keypair)
+        super(address, coinTypeA, coinTypeB)
         this.rammSuiPool = new RAMMSuiPool(rammConfig)
         this.senderAddress = keypair.getPublicKey().toSuiAddress()
 
@@ -216,7 +218,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             !devInspectRes.events ||
             devInspectRes.events.length === 0
         ) {
-            throw new Error('No events found in the transaction block')
+            logger.error('No events found in the transaction block')
         }
 
         if (devInspectRes.error) {

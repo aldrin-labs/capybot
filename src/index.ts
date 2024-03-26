@@ -1,14 +1,11 @@
 import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519'
+import { Keypair } from '@mysten/sui.js/cryptography'
+import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
+
 import { Capybot } from './capybot'
-import { BinanceBTCtoUSDC } from './data_sources/binance/BinanceBTCtoUSDC'
 import { CetusPool } from './dexs/cetus/cetus'
 import { Arbitrage } from './strategies/arbitrage'
-import { MarketDifference } from './strategies/market_difference'
-import { RideTheTrend } from './strategies/ride_the_trend'
-import { RideTheExternalTrend } from './strategies/ride_the_external_trend'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
-
-import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
 
 // Convenience map from name to address for commonly used coins
 export const coins = {
@@ -50,6 +47,32 @@ export const cetusUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(cetusUsdcSuiPhra
 const rammUsdcSuiPhrase = process.env.RAMM_SUI_USDC_ADMIN_PHRASE
 export const rammUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(rammUsdcSuiPhrase!)
 
+enum SupportedPools {
+    Cetus,
+    RAMM
+}
+
+type PoolData = {
+    address: string,
+    keypair: Keypair
+}
+
+export const poolAddresses: { [key in SupportedPools]: Record<string, PoolData> } = {
+    [SupportedPools.Cetus]: {
+        "SUI/USDC": {
+            address: "0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630",
+            keypair: cetusUsdcSuiKeypair
+        }
+    },
+    [SupportedPools.RAMM]: {
+        "SUI/USDC": {
+            address: "0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7",
+            keypair: rammUsdcSuiKeypair
+        }
+    }
+}
+
+
 let capybot = new Capybot('mainnet')
 
 const cetusUSDCtoSUI = new CetusPool(
@@ -77,22 +100,28 @@ const rammUSDCtoSUI = new RAMMPool(
     'mainnet'
 ) */
 
-capybot.addPool(cetusUSDCtoSUI)
-capybot.addPool(rammUSDCtoSUI)
+capybot.addPool(cetusUSDCtoSUI, cetusUsdcSuiKeypair)
+capybot.addPool(rammUSDCtoSUI, rammUsdcSuiKeypair)
 // TODO: fix the way `capybot` stores pool information, so that a RAMM pool with over 2 assets
 // can be added more than once e.g. for its `SUI/USDC` and `SUI/USDT` pairs.
+// FIXED, although the below still needs its own keypair loaded with SUI and USDT to work.
 //capybot.addPool(rammSUItoUSDT)
+
+console.log('CETUS UUID: ' +  cetusUSDCtoSUI.uuid);
+console.log('RAMM UUID: ' + rammUSDCtoSUI.uuid);
+
+
 
 // Add arbitrage strategy: USDC/SUI -> SUI/USDC
 capybot.addStrategy(
     new Arbitrage(
         [
             {
-                pool: cetusUSDCtoSUI.uri,
+                pool_uuid: cetusUSDCtoSUI.uuid,
                 a2b: false,
             },
             {
-                pool: rammUSDCtoSUI.uri,
+                pool_uuid: rammUSDCtoSUI.uuid,
                 a2b: true,
             }
         ],

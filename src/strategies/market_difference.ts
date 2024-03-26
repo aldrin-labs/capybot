@@ -31,7 +31,7 @@ export class MarketDifference extends Strategy {
     ) {
         super({
             name: name,
-            pool: pool.uri,
+            pool: pool.address,
             exchange: exchange,
         })
         this.pool = pool
@@ -67,7 +67,7 @@ export class MarketDifference extends Strategy {
             // The value of A is higher on the exchange than in the pool. Buy more A
             return [
                 {
-                    pool: this.pool.uri,
+                    pool_uuid: this.pool.uri,
                     amountIn: this.defaultAmounts[1],
                     estimatedPrice: 1 / price,
                     a2b: false,
@@ -77,7 +77,7 @@ export class MarketDifference extends Strategy {
             // The value of A is lower on the exchange compared to the pool.
             return [
                 {
-                    pool: this.pool.uri,
+                    pool_uuid: this.pool.uri,
                     amountIn: this.defaultAmounts[0],
                     estimatedPrice: price,
                     a2b: true,

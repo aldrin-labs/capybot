@@ -4,6 +4,8 @@ import { DataSource } from '../data_sources/data_source'
 import { CetusParams, RAMMSuiParams, TurbosParams } from './dexsParams'
 import { Keypair } from '@mysten/sui.js/cryptography'
 
+import { v5 as uuidv5 } from 'uuid'
+
 export type PreswapResult = {
     estimatedAmountIn: number
     estimatedAmountOut: number
@@ -26,15 +28,27 @@ export abstract class Pool<
     public coinTypeB: string
 
     /**
-     * The keypair used to sign and execute PTBs for this pool
+     * Namespace used to created UUIDs for pools using `uuid.v5()` - see
+     * https://github.com/uuidjs/uuid?tab=readme-ov-file#uuidv5name-namespace-buffer-offset .
+     *
+     * Generated from https://www.uuidgenerator.net/.
      */
-    public keypair: Keypair
-    /**
-     * The SUI address of the above keypair - since each pool will use its own keypair to avoid
-     * coin object equivocation, this can also be used to uniquely identify each pool.
-     */
-    public senderAddress: string
+    public static readonly POOL_UUID_NAMESPACE = '8b05a61f-0c4c-428c-9a91-8955d8119419'
 
+    /**
+     * Sui address of the pool.
+     */
+    public address: string
+    /**
+     * The UUID of this pool instance. Generated using the `@types/uuid` package.
+     *
+     * Serves as its URI.
+     *
+     * Pool addresses cannot be used to uniquely identify a pool, because e.g. the same 3-asset
+     * RAMM can be added to the bot in different strategies: once for its `A/B` trading pair, and
+     * twice for its `B/C` trading pair.
+     */
+    public uuid: string
 
     /**
      * Creates an instance of Pool.
@@ -42,13 +56,22 @@ export abstract class Pool<
      * @param coinTypeA The coin type A for the pool.
      * @param coinTypeB The coin type B for the pool.
      */
-    constructor(address: string, coinTypeA: string, coinTypeB: string, keypair: Keypair) {
-        super(address)
+    constructor(address: string, coinTypeA: string, coinTypeB: string) {
+        const types: string[] = [address];
+        if (coinTypeA < coinTypeB) {
+            types.push(...[coinTypeA, coinTypeB])
+        } else {
+            types.push(...[coinTypeB, coinTypeA])
+        };
+
+        const uuid: string = uuidv5(types.join(), Pool.POOL_UUID_NAMESPACE)
+        super(uuid)
+        this.uuid = uuid
+
+        this.address = address
         this.coinTypeA = coinTypeA
         this.coinTypeB = coinTypeB
 
-        this.keypair = keypair
-        this.senderAddress = keypair.getPublicKey().toSuiAddress()
     }
 
     /**
