@@ -61,10 +61,19 @@ export class Capybot {
         logger.info({ strategies: uniqueStrategies }, 'strategies')
 
         let transactionBlock: TransactionBlock = new TransactionBlock()
-        while (new Date().getTime() - startTime < duration) {
+        mainloop: while (new Date().getTime() - startTime < duration) {
             for (const uri in this.dataSources) {
                 let dataSource = this.dataSources[uri]
                 let data = await dataSource.getData()
+
+                if (!data) {
+                    logger.error(
+                        { dataSource: dataSource.uri },
+                        'No data received from data source; skipping round.'
+                    )
+                    continue mainloop
+                }
+
                 logger.info(
                     {
                         price: data,
@@ -112,11 +121,6 @@ export class Capybot {
                             console.log('\nCetus UUID: ' + order.pool_uuid)
                             console.log('Trade amount: ' + order.amountIn)
                             console.log('Inbound asset:' + order.a2b)
-                            console.log(
-                                '\nCetus PTB: ' +
-                                    JSON.stringify(transactionBlock, null, 4) +
-                                    '\n'
-                            )
 
                             // Execute the transaction
 /*                             await this.executeTransactionBlock(
@@ -135,11 +139,7 @@ export class Capybot {
 
                             console.log('\nRAMM UUID: ' + order.pool_uuid);
                             console.log('Trade amount: ' + order.amountIn);
-                            console.log(
-                                '\nRAMM Transaction Block: ' +
-                                    JSON.stringify(transactionBlock, null, 4) +
-                                    '\n'
-                            )
+                            console.log('Inbound asset:' + order.a2b)
 
 /*                             await this.executeTransactionBlock(
                                 transactionBlock,
@@ -215,9 +215,9 @@ export class Capybot {
                 'Pool ' +
                 pool.uri +
                 ' has already been added with asset pair: ' +
-                pool.coinTypeA +
+                pool.coinA.type +
                 '/' +
-                pool.coinTypeB
+                pool.coinB.type
             throw new Error(errMsg)
         }
 

@@ -12,12 +12,11 @@ import { TransactionBlock } from '@mysten/sui.js/transactions'
 import { SuiNetworks } from '../../networks'
 
 import BN from 'bn.js'
-import { getCoinInfo } from '../../coins/coins'
 import { getTotalBalanceByCoinType } from '../../utils/utils'
 import { CetusParams } from '../dexsParams'
-import { Pool, PreswapResult } from '../pool'
+import { Pool } from '../pool'
 import { clmmMainnet } from './mainnet_config'
-import { logger } from '../../logger'
+import { Coin } from '../../coins'
 
 
 function buildSdkOptions(network: SuiNetworks): SdkOptions {
@@ -36,12 +35,12 @@ export class CetusPool extends Pool<CetusParams> {
 
     constructor(
         poolAddress: string,
-        coinTypeA: string,
-        coinTypeB: string,
+        coinA: Coin,
+        coinB: Coin,
         keypair: Keypair,
         network: SuiNetworks
     ) {
-        super(poolAddress, coinTypeA, coinTypeB)
+        super(poolAddress, coinA, coinB)
         this.network = network
         this.sdk = new SDK(buildSdkOptions(this.network))
 
@@ -62,12 +61,12 @@ export class CetusPool extends Pool<CetusParams> {
         const totalBalance = await getTotalBalanceByCoinType(
             this.suiClient,
             this.sdk.senderAddress,
-            params.a2b ? this.coinTypeA : this.coinTypeB
+            params.a2b ? this.coinA.type : this.coinB.type
         )
 
         console.log(
             `TotalBalance for CoinType (${
-                params.a2b ? this.coinTypeA : this.coinTypeB
+                params.a2b ? this.coinA.type : this.coinB.type
             }), is: ${totalBalance} and amountIn is: ${params.amountIn}`
         )
 
@@ -111,19 +110,15 @@ export class CetusPool extends Pool<CetusParams> {
         const pool = await this.sdk.Pool.getPool(this.address)
         // Estimated amountIn amountOut fee
 
-        // Load coin info
-        let coinA = getCoinInfo(this.coinTypeA)
-        let coinB = getCoinInfo(this.coinTypeB)
-
         const res: any = await this.sdk.Swap.preswap({
             a2b: params.a2b,
             amount: coinAmount.toString(),
             byAmountIn: byAmountIn,
-            coinTypeA: this.coinTypeA,
-            coinTypeB: this.coinTypeB,
+            coinTypeA: this.coinA.type,
+            coinTypeB: this.coinB.type,
             currentSqrtPrice: pool.current_sqrt_price,
-            decimalsA: coinA.decimals,
-            decimalsB: coinB.decimals,
+            decimalsA: this.coinA.decimals,
+            decimalsB: this.coinB.decimals,
             pool: pool,
         })
 
