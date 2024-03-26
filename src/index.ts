@@ -118,11 +118,15 @@ capybot.addStrategy(
     new Arbitrage(
         [
             {
-                pool_uuid: cetusUSDCtoSUI.uuid,
+                poolUuid: cetusUSDCtoSUI.uuid,
+                coinA: cetusUSDCtoSUI.coinA,
+                coinB: cetusUSDCtoSUI.coinB,
                 a2b: false,
             },
             {
-                pool_uuid: rammUSDCtoSUI.uuid,
+                poolUuid: rammUSDCtoSUI.uuid,
+                coinA: rammUSDCtoSUI.coinA,
+                coinB: rammUSDCtoSUI.coinB,
                 a2b: true,
             }
         ],

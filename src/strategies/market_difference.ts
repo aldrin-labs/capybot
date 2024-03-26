@@ -67,7 +67,8 @@ export class MarketDifference extends Strategy {
             // The value of A is higher on the exchange than in the pool. Buy more A
             return [
                 {
-                    pool_uuid: this.pool.uri,
+                    poolUuid: this.pool.uri,
+                    assetIn: this.pool.coinB.type,
                     amountIn: this.defaultAmounts[1],
                     estimatedPrice: 1 / price,
                     a2b: false,
@@ -77,7 +78,8 @@ export class MarketDifference extends Strategy {
             // The value of A is lower on the exchange compared to the pool.
             return [
                 {
-                    pool_uuid: this.pool.uri,
+                    poolUuid: this.pool.uri,
+                    assetIn: this.pool.coinA.type,
                     amountIn: this.defaultAmounts[0],
                     estimatedPrice: price,
                     a2b: true,
