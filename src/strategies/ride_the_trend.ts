@@ -94,7 +94,7 @@ export class RideTheTrend extends Strategy {
                 this.lastDecision = 0
                 return [
                     {
-                        pool: this.pool,
+                        pool_uuid: this.pool,
                         amountIn: this.defaultAmounts[0],
                         estimatedPrice: price,
                         a2b: true,
@@ -105,7 +105,7 @@ export class RideTheTrend extends Strategy {
                 this.lastDecision = 0
                 return [
                     {
-                        pool: this.pool,
+                        pool_uuid: this.pool,
                         amountIn: this.defaultAmounts[1],
                         estimatedPrice: 1 / price,
                         a2b: false,

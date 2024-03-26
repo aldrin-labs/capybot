@@ -9,7 +9,7 @@ import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
 import { Keypair } from '@mysten/sui.js/cryptography'
 import { TransactionBlock } from '@mysten/sui.js/transactions'
 
-import { SuiNetworks } from '../types'
+import { SuiNetworks } from '../../networks'
 
 import BN from 'bn.js'
 import { getCoinInfo } from '../../coins/coins'
@@ -41,7 +41,7 @@ export class CetusPool extends Pool<CetusParams> {
         keypair: Keypair,
         network: SuiNetworks
     ) {
-        super(poolAddress, coinTypeA, coinTypeB, keypair)
+        super(poolAddress, coinTypeA, coinTypeB)
         this.network = network
         this.sdk = new SDK(buildSdkOptions(this.network))
 
@@ -61,7 +61,7 @@ export class CetusPool extends Pool<CetusParams> {
     ): Promise<TransactionBlock> {
         const totalBalance = await getTotalBalanceByCoinType(
             this.suiClient,
-            this.senderAddress,
+            this.sdk.senderAddress,
             params.a2b ? this.coinTypeA : this.coinTypeB
         )
 
@@ -83,7 +83,7 @@ export class CetusPool extends Pool<CetusParams> {
         price: number
         fee: number
     }> {
-        let pool = await this.sdk.Pool.getPool(this.uri)
+        let pool = await this.sdk.Pool.getPool(this.address)
 
         let price = pool.current_sqrt_price ** 2 / 2 ** 128
         let fee = pool.fee_rate * 10 ** -6
@@ -108,7 +108,7 @@ export class CetusPool extends Pool<CetusParams> {
         // slippage value
         const slippage = Percentage.fromDecimal(d(5))
         // Fetch pool data
-        const pool = await this.sdk.Pool.getPool(this.uri)
+        const pool = await this.sdk.Pool.getPool(this.address)
         // Estimated amountIn amountOut fee
 
         // Load coin info
