@@ -232,8 +232,6 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         const price = priceEstimationEventJSON.amount_out / priceEstimationEventJSON.amount_in
         const scaledPrice = price * (10 ** (this.coinA.decimals - this.coinB.decimals))
 
-        console.log('\n\nRAMM PRICE ADJUSTED: ' +  scaledPrice)
-
         return {
             price: scaledPrice,
             fee:

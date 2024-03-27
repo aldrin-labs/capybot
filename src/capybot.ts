@@ -93,8 +93,6 @@ export class Capybot {
                             'order'
                         )
 
-                        console.log('Order.pool: ' + order.poolUuid + '\n')
-
                         let amountIn = Math.round(order.amountIn)
                         let amountOut = Math.round(
                             order.estimatedPrice * amountIn
@@ -115,21 +113,13 @@ export class Capybot {
                                 slippage,
                             })
 
-                            console.log('\nCetus UUID: ' + order.poolUuid)
-                            console.log('Trade amount: ' + order.amountIn)
-                            console.log('Inbound asset:' + order.a2b)
-
                             // Execute the transaction
-/*                             await this.executeTransactionBlock(
+                            await this.executeTransactionBlock(
                                 transactionBlock,
                                 this.poolKeypairs[order.poolUuid],
                                 strategy
-                            ); */
+                            );
                         } else if (this.pools[order.poolUuid] instanceof RAMMPool) {
-                            console.log(
-                                '\nEstimated Price: ' + order.estimatedPrice + '\n'
-                            )
-
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
                                 order.poolUuid
@@ -138,15 +128,11 @@ export class Capybot {
                                 amountIn,
                             })
 
-                            console.log('\nRAMM UUID: ' + order.poolUuid);
-                            console.log('Trade amount: ' + order.amountIn);
-                            console.log('Inbound asset:' + order.a2b)
-
-/*                             await this.executeTransactionBlock(
+                            await this.executeTransactionBlock(
                                 transactionBlock,
                                 this.poolKeypairs[order.poolUuid],
                                 strategy
-                            ); */
+                            );
                         }
                     }
                 }
