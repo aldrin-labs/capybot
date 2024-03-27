@@ -93,9 +93,6 @@ export class Capybot {
                             'order'
                         )
 
-                        console.log(
-                            '\nEstimated Price: ' + order.estimatedPrice + '\n'
-                        )
                         console.log('Order.pool: ' + order.poolUuid + '\n')
 
                         let amountIn = Math.round(order.amountIn)
@@ -129,6 +126,10 @@ export class Capybot {
                                 strategy
                             ); */
                         } else if (this.pools[order.poolUuid] instanceof RAMMPool) {
+                            console.log(
+                                '\nEstimated Price: ' + order.estimatedPrice + '\n'
+                            )
+
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
                                 order.poolUuid

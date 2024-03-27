@@ -26,4 +26,11 @@ export namespace Assets {
         "type": "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN",
         "decimals": 6,
     }
+
+    export const WBTC: Coin = {
+        "name": "Wrapped BTC",
+        "symbol": "WBTC",
+        "type": "0x27792d9fed7f9844eb4839566001bb6f6cb4804f66aa2da6fe1ee242d896881::coin::COIN",
+        "decimals": 8,
+    }
 }

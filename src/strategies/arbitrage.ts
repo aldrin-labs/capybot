@@ -13,7 +13,6 @@ type PoolWithDirection = {
 export class Arbitrage extends Strategy {
     private readonly lowerLimit: number
     private readonly poolChain: Array<PoolWithDirection>
-    private readonly poolChainAsString: string
     private latestRate: Record<string, number> = {}
     private latestFee: Record<string, number> = {}
     private readonly defaultAmount: number
@@ -23,6 +22,8 @@ export class Arbitrage extends Strategy {
      *
      * @param poolChain The chain of pools to consider for an arbitrage. The order should be defined such that a transaction on all chains in order will end up with the same token.
      * @param defaultAmount The default amount of the first coin in the pool chain to trade (e.g. `poolChain[0].a2b ? poolChain[0].pool.coinTypeA : poolChain[0].pool.coinTypeB`.
+     *
+     * It is an unscaled amount, and decimal places are applied contingent on the `a2b` property in each circumstance.
      * @param relativeLimit Relative limit is percentage, e.g. 1.05 for a 5% win.
      * @param name A human-readable name for this strategy.
      */
@@ -39,10 +40,6 @@ export class Arbitrage extends Strategy {
         this.poolChain = poolChain
         this.defaultAmount = defaultAmount
         this.lowerLimit = relativeLimit
-        // A short string representation of the pools used. Used for logging and debugging
-        this.poolChainAsString = this.poolChain
-            .map((p) => p.poolUuid.substring(0, 8))
-            .toString()
     }
 
     evaluate(data: DataPoint): Array<TradeOrder> {
@@ -72,16 +69,26 @@ export class Arbitrage extends Strategy {
         }
         this.logStatus({ arbitrage: arbitrage, reverse: arbitrageReverse })
 
+        let amountIn: number = this.defaultAmount
+
         if (arbitrage > this.lowerLimit) {
             // The amount of A by trading around the chain is higher than the amount in.
             let orders = []
-            let amountIn: number = this.defaultAmount
+            
             for (const pool of this.poolChain) {
                 let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
+                // recall that in this case, `pool.a2b` is true, so A is inbound
+                const scaledAmountIn = amountIn * (10 ** pool.coinA.decimals)
+
+                console.log('\n\nAMOUNT IN: ' + amountIn)
+                console.log('a2b SCALED AMOUNT IN: ' + scaledAmountIn)
+                console.log('DEC PLACES: ' + pool.coinA.decimals)
+                console.log('ASSET IN: ' + pool.coinA.type + '\n\n')
+
                 orders.push({
                     poolUuid: pool.poolUuid,
                     assetIn: pool.a2b ? pool.coinA.type : pool.coinB.type,
-                    amountIn: amountIn,
+                    amountIn: scaledAmountIn,
                     estimatedPrice: latestRate,
                     a2b: pool.a2b,
                 })
@@ -91,17 +98,24 @@ export class Arbitrage extends Strategy {
         } else if (arbitrageReverse > this.lowerLimit) {
             // The amount of A by trading around the chain is lower than the amount in. Trade in the opposite direction.
             let orders = []
-            let amount: number = this.defaultAmount
             for (const pool of this.poolChain.reverse()) {
                 let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
+                // recall that in this case, `pool.a2b` is false, so B is inbound
+                const scaledAmountIn = amountIn * (10 ** pool.coinB.decimals)
+
+                console.log('\n\nAMOUNT IN: ' + amountIn)
+                console.log('b2a SCALED AMOUNT IN: ' + scaledAmountIn)
+                console.log('DEC PLACES: ' + pool.coinB.decimals)
+                console.log('ASSET IN: ' + pool.coinB.type + '\n\n')
+
                 orders.push({
                     poolUuid: pool.poolUuid,
                     assetIn: !pool.a2b ? pool.coinB.type : pool.coinA.type,
-                    amountIn: amount,
+                    amountIn: scaledAmountIn,
                     estimatedPrice: latestRate,
                     a2b: !pool.a2b,
                 })
-                amount = amount * latestRate
+                amountIn = amountIn * latestRate
             }
             return orders
         }

@@ -91,7 +91,8 @@ export abstract class Pool<
 
     /**
      * Abstract method for estimating the price of a cryptocurrency swap and the fee.
-     * @returns A Promise of type number representing the estimated price of the swap and the relative fee.
+     * @returns A Promise of type number representing the estimated price of the swap and the **relative** fee.
+     *
      */
     abstract estimatePriceAndFee(): Promise<{
         price: number

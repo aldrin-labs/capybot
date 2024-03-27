@@ -194,6 +194,8 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         price: number
         fee: number
     }> {
+        const amountIn = 0.1 * 10 ** this.coinA.decimals
+        
         const estimate_txb: TransactionBlock =
             this.rammSuiPool.estimatePriceWithAmountIn({
                 assetIn: this.coinA.type,
@@ -201,7 +203,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
                 // TODO this can be changed to reflect the actual amount being traded.
                 // For a prototype, choosing to trade one unit of the currency will give a usable
                 // approximation.
-                amountIn: 1 * 10 ** this.coinA.decimals,
+                amountIn
             })
 
         const devInspectRes = await this.suiClient.devInspectTransactionBlock({
@@ -227,12 +229,15 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         const priceEstimationEventJSON = devInspectRes.events[0]
             .parsedJson as PriceEstimationEvent
 
+        const price = priceEstimationEventJSON.amount_out / priceEstimationEventJSON.amount_in
+        const scaledPrice = price * (10 ** (this.coinA.decimals - this.coinB.decimals))
+
+        console.log('\n\nRAMM PRICE ADJUSTED: ' +  scaledPrice)
+
         return {
-            price:
-                priceEstimationEventJSON.amount_out /
-                priceEstimationEventJSON.amount_in,
+            price: scaledPrice,
             fee:
-                priceEstimationEventJSON.protocol_fee / 10 ** this.coinA.decimals,
+                priceEstimationEventJSON.protocol_fee / amountIn,
         }
     }
 }

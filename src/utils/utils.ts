@@ -2,8 +2,6 @@ import { PaginatedCoins, SuiClient } from '@mysten/sui.js/client'
 import { TransactionArgument, TransactionBlock } from '@mysten/sui.js/transactions'
 import { normalizeSuiObjectId } from '@mysten/sui.js/utils'
 
-import { coins } from '../index'
-
 import Decimal from 'decimal.js'
 
 export const SUI_COIN_OBJECT_ID = '0x2::sui::SUI'
@@ -321,23 +319,4 @@ function sortByBalanceDes(coins: CoinAsset[]): CoinAsset[] {
 // eslint-disable-next-line @typescript-eslint/adjacent-overload-signatures
 function calculateTotalBalance(coins: CoinAsset[]): bigint {
     return coins.reduce((partialSum, c) => partialSum + c.balance, BigInt(0))
-}
-
-export function getCoinDecimals(coinType: string): number {
-    switch (coinType) {
-        case coins.SUI:
-            return 9
-        case coins.USDC:
-            return 6
-        case coins.CETUS:
-            return 9
-        case coins.WETH:
-            return 8
-        case coins.USDT:
-            return 6
-        case coins.WBTC:
-            return 8
-        default:
-            return 0
-    }
 }
