@@ -87,8 +87,6 @@ export class CetusPool extends Pool<CetusParams> {
 
         const scaled_price = price * (10 ** (this.coinA.decimals - this.coinB.decimals))
 
-        console.log('\n\nCETUS PRICE ADJUSTED: ' +  scaled_price)
-
         let fee = pool.fee_rate * 10 ** -6
 
         return {

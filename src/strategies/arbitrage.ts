@@ -80,11 +80,6 @@ export class Arbitrage extends Strategy {
                 // recall that in this case, `pool.a2b` is true, so A is inbound
                 const scaledAmountIn = amountIn * (10 ** pool.coinA.decimals)
 
-                console.log('\n\nAMOUNT IN: ' + amountIn)
-                console.log('a2b SCALED AMOUNT IN: ' + scaledAmountIn)
-                console.log('DEC PLACES: ' + pool.coinA.decimals)
-                console.log('ASSET IN: ' + pool.coinA.type + '\n\n')
-
                 orders.push({
                     poolUuid: pool.poolUuid,
                     assetIn: pool.a2b ? pool.coinA.type : pool.coinB.type,
@@ -102,11 +97,6 @@ export class Arbitrage extends Strategy {
                 let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
                 // recall that in this case, `pool.a2b` is false, so B is inbound
                 const scaledAmountIn = amountIn * (10 ** pool.coinB.decimals)
-
-                console.log('\n\nAMOUNT IN: ' + amountIn)
-                console.log('b2a SCALED AMOUNT IN: ' + scaledAmountIn)
-                console.log('DEC PLACES: ' + pool.coinB.decimals)
-                console.log('ASSET IN: ' + pool.coinB.type + '\n\n')
 
                 orders.push({
                     poolUuid: pool.poolUuid,
