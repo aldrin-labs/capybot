@@ -1,8 +1,7 @@
 import { DataSource } from '../data_source'
 import { DataPoint, DataType, PriceData } from '../data_point'
 import { BTCtoUSDC } from '../../utils/binance-ticker-price'
-import { getCoinDecimals } from '../../utils/utils'
-import { coins } from '../../index'
+import { Assets } from '../../coins'
 
 export class BinanceBTCtoUSDC extends DataSource {
     constructor() {
@@ -13,10 +12,7 @@ export class BinanceBTCtoUSDC extends DataSource {
         return BTCtoUSDC().then((value) => {
             let parsed = Number(value)
             let price =
-                10 **
-                    (getCoinDecimals(coins.WBTC) -
-                        getCoinDecimals(coins.USDC)) /
-                parsed
+                10 ** (Assets.WBTC.decimals - Assets.USDC.decimals) / parsed
             return {
                 type: DataType.Price,
                 source_uri: this.uri,
