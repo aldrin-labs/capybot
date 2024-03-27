@@ -113,5 +113,7 @@ capybot.addStrategy(
     )
 )
 
+const oneHour = 3.6e6
+
 // Start the bot
-capybot.loop(3.6e6, 1000)
+capybot.loop(3 * oneHour, 1000)

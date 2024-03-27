@@ -77,8 +77,11 @@ export class Arbitrage extends Strategy {
             
             for (const pool of this.poolChain) {
                 let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
-                // recall that in this case, `pool.a2b` is true, so A is inbound
-                const scaledAmountIn = amountIn * (10 ** pool.coinA.decimals)
+
+                //console.log('\n\nAMOUNT IN: ' + amountIn)
+                const scaledAmountIn = amountIn * (pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                //console.log('SCALED AMOUNT IN: ' + scaledAmountIn)
+                //console.log('ASSET IN: ' + (pool.a2b ? pool.coinA.type : pool.coinB.type))
 
                 orders.push({
                     poolUuid: pool.poolUuid,
@@ -87,7 +90,10 @@ export class Arbitrage extends Strategy {
                     estimatedPrice: latestRate,
                     a2b: pool.a2b,
                 })
+
                 amountIn = amountIn * latestRate
+
+                //console.log('POST MUL AMOUNT IN: ' + amountIn + '\n\n')
             }
             return orders
         } else if (arbitrageReverse > this.lowerLimit) {
@@ -95,17 +101,24 @@ export class Arbitrage extends Strategy {
             let orders = []
             for (const pool of this.poolChain.reverse()) {
                 let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
+
                 // recall that in this case, `pool.a2b` is false, so B is inbound
-                const scaledAmountIn = amountIn * (10 ** pool.coinB.decimals)
+                //console.log('\n\nREV AMOUNT IN: ' + amountIn)
+                const scaledAmountIn = amountIn * (!pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                //console.log('REV SCALED AMOUNT IN: ' + scaledAmountIn)
+                //console.log('REV ASSET IN: ' + (!pool.a2b ? pool.coinA.type : pool.coinB.type))
 
                 orders.push({
                     poolUuid: pool.poolUuid,
-                    assetIn: !pool.a2b ? pool.coinB.type : pool.coinA.type,
+                    assetIn: !pool.a2b ? pool.coinA.type : pool.coinB.type,
                     amountIn: scaledAmountIn,
                     estimatedPrice: latestRate,
                     a2b: !pool.a2b,
                 })
+
                 amountIn = amountIn * latestRate
+
+                //console.log('REV POST MUL AMOUNT IN: ' + amountIn + '\n\n')
             }
             return orders
         }
