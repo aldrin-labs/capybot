@@ -64,6 +64,13 @@ In this release, Capy Trading Bot supports swap pools from [Cetus](https://www.c
 Before you run the script, environment variables need to be set: an `ADMIN_PHRASE` and an `ADMIN_ADDRESS` for **each** pool
 being traded on.
 
+Note that **each** pool require a **unique** phrase/address combination, which must not be shared
+between pools.
+
+If they are shared, it is possible that a concurrent submission of multiple transactions using the same e.g. gas
+object may lock that object until the end of the current epoch, causing any of the bot's future transactions
+to fail at the execution stage.
+
 Note that in the case of RAMM pools, which support more than 2 assets, a phrase and an address need to be set for each
 separate instance of `Pool`:
 * If a `SUI/USDC/USDT` pool is being used twice
