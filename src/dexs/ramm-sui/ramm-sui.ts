@@ -20,16 +20,21 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'
 
     public senderAddress: string
+    // Required to estimate the price of a trade
+    public defaultAmountCoinA: number
 
     constructor(
         rammConfig: RAMMSuiPoolConfig,
         address: string,
         coinA: Coin,
+        defaultAmountCoinA: number,
         coinB: Coin,
         keypair: Keypair,
         network: SuiNetworks
     ) {
         super(address, coinA, coinB)
+        this.defaultAmountCoinA = defaultAmountCoinA
+
         this.rammSuiPool = new RAMMSuiPool(rammConfig)
         this.senderAddress = keypair.getPublicKey().toSuiAddress()
 
@@ -194,15 +199,12 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         price: number
         fee: number
     }> {
-        const amountIn = 0.1 * 10 ** this.coinA.decimals
+        const amountIn = this.defaultAmountCoinA * 10 ** this.coinA.decimals
         
         const estimate_txb: TransactionBlock =
             this.rammSuiPool.estimatePriceWithAmountIn({
                 assetIn: this.coinA.type,
                 assetOut: this.coinB.type,
-                // TODO this can be changed to reflect the actual amount being traded.
-                // For a prototype, choosing to trade one unit of the currency will give a usable
-                // approximation.
                 amountIn
             })
 

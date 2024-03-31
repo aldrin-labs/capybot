@@ -2,7 +2,7 @@ import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519'
 import { Keypair } from '@mysten/sui.js/cryptography'
 import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
 
-import { Capybot, ARBITRAGE_DEFAULT_AMOUNT } from './capybot'
+import { Capybot } from './capybot'
 import { Coin, Assets } from './coins'
 import { CetusPool } from './dexs/cetus/cetus'
 import { Arbitrage } from './strategies/arbitrage'
@@ -15,8 +15,19 @@ const RIDE_THE_TREND_LIMIT = 1.000005
 
 // Arbitrage threshold - 0.05%, or above
 const ARBITRAGE_RELATIVE_LIMIT = 1.0005
+// Trades should not be bigger than 0.1 of whatever asset is being traded - scaled at the moment of
+// the trade to the asset's correct decimal places.
+const ARBITRAGE_DEFAULT_AMOUNT = 0.1
 
 const MARKET_DIFFERENCE_LIMIT = 1.01
+
+/**
+ * Default amount to trade, for each token. Set to approximately 0.1 USD each.
+ */
+export const defaultAmounts: Record<string, number> = {};
+defaultAmounts[Assets.SUI.type] = 50_000_000;
+defaultAmounts[Assets.USDC.type] = 100_000;
+defaultAmounts[Assets.USDT.type] = 100_000;
 
 // Setup wallet from passphrase.
 const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
@@ -64,6 +75,7 @@ const rammSUItoUSDC = new RAMMPool(
     rammSuiConfigs[SuiSupportedNetworks.mainnet][0],
     '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
     Assets.SUI,
+    defaultAmounts[Assets.SUI.type],
     Assets.USDC,
     rammUsdcSuiKeypair,
     'mainnet'
@@ -104,7 +116,7 @@ capybot.addStrategy(
                 a2b: true,
             }
         ],
-        ARBITRAGE_DEFAULT_AMOUNT,
+        defaultAmounts,
         ARBITRAGE_RELATIVE_LIMIT,
         'Arbitrage: SUI -CETUS-> USDC -RAMM-> SUI'
     )
