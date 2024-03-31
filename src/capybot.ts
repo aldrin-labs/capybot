@@ -15,6 +15,10 @@ import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
 // Default gas budget: 0.5 `SUI`
 const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
 
+// Trades should not be bigger than 0.1 of whatever asset is being traded - scaled at the moment of
+// the trade to the asset's correct decimal places.
+export const ARBITRAGE_DEFAULT_AMOUNT = 0.1
+
 /**
  * A simple trading bot which subscribes to a number of trading pools across different DEXs. The bot may use multiple
  * strategies to trade on these pools.
@@ -30,6 +34,8 @@ export class Capybot {
         string,
         Pool<CetusParams | TurbosParams | RAMMSuiParams>
     > = {}
+
+    public static arbitrageDefaultAmount = ARBITRAGE_DEFAULT_AMOUNT
 
     /**
      * A record of the keypairs each pool uses to sign its transactions.
@@ -64,7 +70,15 @@ export class Capybot {
         mainloop: while (new Date().getTime() - startTime < duration) {
             for (const uri in this.dataSources) {
                 let dataSource = this.dataSources[uri]
-                let data = await dataSource.getData()
+                let data;
+
+                // If the data source is a RAMM pool, accurate pricing estimates require knowledge of the
+                // amount being traded.
+                if (dataSource instanceof RAMMPool) {
+                    data = await dataSource.getData(Capybot.arbitrageDefaultAmount)
+                } else {
+                    await dataSource.getData()
+                }
 
                 if (!data) {
                     logger.error(

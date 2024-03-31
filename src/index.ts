@@ -2,7 +2,7 @@ import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519'
 import { Keypair } from '@mysten/sui.js/cryptography'
 import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
 
-import { Capybot } from './capybot'
+import { Capybot, ARBITRAGE_DEFAULT_AMOUNT } from './capybot'
 import { Coin, Assets } from './coins'
 import { CetusPool } from './dexs/cetus/cetus'
 import { Arbitrage } from './strategies/arbitrage'
@@ -15,9 +15,6 @@ const RIDE_THE_TREND_LIMIT = 1.000005
 
 // Arbitrage threshold - 0.05%, or above
 const ARBITRAGE_RELATIVE_LIMIT = 1.0005
-// Trades should not be bigger than 0.1 of whatever asset is being traded - scaled at the moment of
-// the trade to the asset's correct decimal places.
-const ARBITRAGE_DEFAULT_AMOUNT = 0.1
 
 const MARKET_DIFFERENCE_LIMIT = 1.01
 

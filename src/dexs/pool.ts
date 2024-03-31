@@ -94,17 +94,22 @@ export abstract class Pool<
      * @returns A Promise of type number representing the estimated price of the swap and the **relative** fee.
      *
      */
-    abstract estimatePriceAndFee(): Promise<{
+    abstract estimatePriceAndFee(amount?: number): Promise<{
         price: number
         fee: number
     }>
 
     /**
-     * Method for getting data about the pool.
+     * Method for getting data about the pool: current price and fee (as a %), the pool's base and
+     * quote assets, and the URI of the pool.
+     *
+     * The optional `amount` parameter is used specifically by the `Arbitrage` strategy, and only by RAMM pools, as
+     * to obtain the exact price of a trade, the amount must be known.
+     *
      * @returns A Promise of type DataPoint representing data about the pool.
      */
-    async getData(): Promise<DataPoint> {
-        let priceAndFee = await this.estimatePriceAndFee()
+    async getData(amount?: number): Promise<DataPoint> {
+        let priceAndFee = await this.estimatePriceAndFee(amount)
         return {
             type: DataType.Price,
             source_uri: this.uri,
