@@ -8,6 +8,8 @@ import { CetusPool } from './dexs/cetus/cetus'
 import { Arbitrage } from './strategies/arbitrage'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
 
+import * as dotenv from 'dotenv'
+dotenv.config()
 // A conservative upper limit on the max gas price per transaction block in SUI
 export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 
@@ -80,14 +82,14 @@ const rammSUItoUSDC = new RAMMPool(
     'mainnet'
 ) */
 
-capybot.addPool(cetusUSDCtoSUI, cetusUsdcSuiKeypair)
-capybot.addPool(rammSUItoUSDC, rammUsdcSuiKeypair)
+capybot.addPool(cetusUSDCtoSUI, cetusUsdcSuiKeypair, true)
+capybot.addPool(rammSUItoUSDC, rammUsdcSuiKeypair, true)
 // TODO: fix the way `capybot` stores pool information, so that a RAMM pool with over 2 assets
 // can be added more than once e.g. for its `SUI/USDC` and `SUI/USDT` pairs.
 // FIXED, although the below still needs its own keypair loaded with SUI and USDT to work.
 //capybot.addPool(rammSUItoUSDT)
 
-console.log('Cetus USDC/SUI UUID: ' +  cetusUSDCtoSUI.uuid);
+console.log('Cetus USDC/SUI UUID: ' + cetusUSDCtoSUI.uuid);
 console.log('RAMM SUI/USDC UUID: ' + rammSUItoUSDC.uuid);
 
 // Add arbitrage strategy: SUI/USDC -> USDC/SUI

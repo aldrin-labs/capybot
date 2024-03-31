@@ -11,9 +11,15 @@ import { Pool } from './dexs/pool'
 import { logger } from './logger'
 import { Strategy } from './strategies/strategy'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
+import { Int } from 'ccxt/js/src/base/types'
 
 // Default gas budget: 0.5 `SUI`
 const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
+
+interface Transfer {
+    to: string;
+    amount: number;
+}
 
 /**
  * A simple trading bot which subscribes to a number of trading pools across different DEXs. The bot may use multiple
@@ -37,14 +43,21 @@ export class Capybot {
      * The key is the address of the pool, and the value is the keypair object.
      */
     public poolKeypairs: Record<string, Keypair> = {}
-
     public strategies: Record<string, Array<Strategy>> = {}
+
     private suiClient: SuiClient
     private network: SuiNetworks
 
-    constructor(network: SuiNetworks) {
+    private rebalanceKeypairs: Set<Keypair>
+    private coinTypes: Set<string>
+    private maxDelta: number
+
+    constructor(network: SuiNetworks, maxDelta: number = 0.2) {
         this.network = network
         this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
+        this.rebalanceKeypairs = new Set<Keypair>()
+        this.coinTypes = new Set<string>()
+        this.maxDelta = maxDelta
     }
 
     async loop(duration: number, delay: number) {
@@ -62,6 +75,7 @@ export class Capybot {
 
         let transactionBlock: TransactionBlock = new TransactionBlock()
         mainloop: while (new Date().getTime() - startTime < duration) {
+            await this.rebalance()
             for (const uri in this.dataSources) {
                 let dataSource = this.dataSources[uri]
                 let data = await dataSource.getData()
@@ -141,6 +155,76 @@ export class Capybot {
         }
     }
 
+    private async rebalance() {
+
+        logger.info("checking if needs rebalance")
+        const balances = new Map<string, number[]>()
+        const rebalance = new Map<string, number[]>()
+
+        for (let coin of this.coinTypes) {
+            const kpBalance: number[] = []
+            const balanceAddrs: string[] = []
+            let avg: number = 0
+            const keypairs = Array.from(this.rebalanceKeypairs)
+            for (let keypair of keypairs) {
+                let coins = await this.suiClient.getCoins({ owner: keypair.toSuiAddress(), coinType: coin })
+                let coinBalance = coins.data[0]
+                for (let i = 0; i < coins.data.length; i++) {
+                    const coinData = coins.data[i];
+                    if (coinBalance.balance < coinData.balance) {
+                        coinBalance = coinData
+                    }
+                }
+                kpBalance.push(Number(coinBalance.balance))
+                balanceAddrs.push(coinBalance.coinObjectId)
+                avg += Number(coinBalance.balance)
+            }
+            balances.set(coin, kpBalance)
+
+            const avgDiff: number[] = []
+            const from: Transfer[] = []
+            const to: Transfer[] = []
+            let senderPos = 0;
+            let triggerRebalance: boolean = false
+            avg = avg / this.rebalanceKeypairs.size
+            for (let i = 0; i < kpBalance.length; i++) {
+                const amt = kpBalance[i];
+                let delta = Math.floor(avg - amt)
+                if (Math.abs(delta) / avg >= this.maxDelta) {
+                    triggerRebalance = true
+                }
+                avgDiff.push(delta)
+                if (delta > 0) {
+                    to.push({ amount: Number(delta), to: keypairs[i].toSuiAddress() })
+                } else {
+                    senderPos = i
+                    from.push({ amount: Number(-delta), to: balanceAddrs[i] })
+                }
+            }
+            rebalance.set(coin, avgDiff)
+
+            if (triggerRebalance) {
+                logger.info("executing rebalance")
+                await this.executeRebalanceTx(keypairs[senderPos], from[0], to)
+            }
+        }
+    }
+
+    private async executeRebalanceTx(sender: Keypair, from: Transfer, to: Transfer[]) {
+        let txb = new TransactionBlock()
+        const coins = txb.splitCoins(
+            from.to,
+            to.map((transfer) => transfer.amount),
+        );
+        to.forEach((transfer, index) => {
+            txb.transferObjects([coins[index]], transfer.to);
+        });
+        let res = await this.suiClient.signAndExecuteTransactionBlock({
+            transactionBlock: txb,
+            signer: sender
+        });
+    }
+
     private async executeTransactionBlock(
         transactionBlock: TransactionBlock,
         keypair: Keypair,
@@ -174,7 +258,7 @@ export class Capybot {
             if (!this.dataSources.hasOwnProperty(dataSource)) {
                 throw new Error(
                     'Bot does not know the dataSource with address ' +
-                        dataSource
+                    dataSource
                 )
             }
             this.strategies[dataSource].push(strategy)
@@ -195,7 +279,8 @@ export class Capybot {
     /** Add a new pool for this bot to use for trading. */
     addPool(
         pool: Pool<CetusParams | RAMMSuiParams | TurbosParams>,
-        keypair: Keypair
+        keypair: Keypair,
+        requiresRebalance: boolean = false
     ) {
         if (this.pools.hasOwnProperty(pool.uuid)) {
             const errMsg: string =
@@ -211,5 +296,11 @@ export class Capybot {
         this.pools[pool.uri] = pool
         this.poolKeypairs[pool.uri] = keypair
         this.addDataSource(pool)
+
+        if (requiresRebalance) {
+            this.rebalanceKeypairs.add(keypair)
+            this.coinTypes.add(pool.coinA.type)
+            this.coinTypes.add(pool.coinB.type)
+        }
     }
 }
