@@ -25,9 +25,9 @@ const MARKET_DIFFERENCE_LIMIT = 1.01
  * Default amount to trade, for each token. Set to approximately 0.1 USD each.
  */
 export const defaultAmounts: Record<string, number> = {};
-defaultAmounts[Assets.SUI.type] = 50_000_000;
-defaultAmounts[Assets.USDC.type] = 100_000;
-defaultAmounts[Assets.USDT.type] = 100_000;
+defaultAmounts[Assets.SUI.type] = 0.05;
+defaultAmounts[Assets.USDC.type] = 0.1;
+defaultAmounts[Assets.USDT.type] = 0.1;
 
 // Setup wallet from passphrase.
 const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE

@@ -19,7 +19,7 @@
         "@binance/connector-typescript": "^0.3.6",
         "@cetusprotocol/cetus-sui-clmm-sdk": "^3.17.10",
         "@mysten/sui.js": "^0.51.0",
-        "@ramm/ramm-sui-sdk": "0.0.1",
+        "@ramm/ramm-sui-sdk": "0.0.2",
         "@thanpolas/univ3prices": "^3.0.2",
         "@types/uuid": "^9.0.8",
         "axios": "^1.4.0",
