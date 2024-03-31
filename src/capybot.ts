@@ -114,11 +114,11 @@ export class Capybot {
                             })
 
                             // Execute the transaction
-                            await this.executeTransactionBlock(
+/*                             await this.executeTransactionBlock(
                                 transactionBlock,
                                 this.poolKeypairs[order.poolUuid],
                                 strategy
-                            );
+                            ); */
                         } else if (this.pools[order.poolUuid] instanceof RAMMPool) {
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
@@ -128,11 +128,11 @@ export class Capybot {
                                 amountIn,
                             })
 
-                            await this.executeTransactionBlock(
+/*                             await this.executeTransactionBlock(
                                 transactionBlock,
                                 this.poolKeypairs[order.poolUuid],
                                 strategy
-                            );
+                            ); */
                         }
                     }
                 }
