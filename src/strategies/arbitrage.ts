@@ -15,7 +15,11 @@ export class Arbitrage extends Strategy {
     private readonly poolChain: Array<PoolWithDirection>
     private latestRate: Record<string, number> = {}
     private latestFee: Record<string, number> = {}
-    private readonly defaultAmount: number
+
+    /**
+     * Default amounts for all of the assets involved in this arbitrage trade.
+     */
+    private readonly defaultAmounts: Record<string, number> = {}
 
     /**
      * Create a new arbitrage strategy.
@@ -29,7 +33,7 @@ export class Arbitrage extends Strategy {
      */
     constructor(
         poolChain: Array<PoolWithDirection>,
-        defaultAmount: number,
+        defaultAmounts: Record<string, number>,
         relativeLimit: number,
         name: string
     ) {
@@ -38,7 +42,7 @@ export class Arbitrage extends Strategy {
             poolChain: poolChain,
         })
         this.poolChain = poolChain
-        this.defaultAmount = defaultAmount
+        this.defaultAmounts = defaultAmounts
         this.lowerLimit = relativeLimit
     }
 
@@ -69,14 +73,14 @@ export class Arbitrage extends Strategy {
         }
         this.logStatus({ arbitrage: arbitrage, reverse: arbitrageReverse })
 
-        let amountIn: number = this.defaultAmount
-
         if (arbitrage > this.lowerLimit) {
             // The amount of A by trading around the chain is higher than the amount in.
             let orders = []
-            
+
             for (const pool of this.poolChain) {
                 let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
+
+                let amountIn = pool.a2b ? this.defaultAmounts[pool.coinA.type] : this.defaultAmounts[pool.coinB.type]
 
                 //console.log('\n\nAMOUNT IN: ' + amountIn)
                 const scaledAmountIn = amountIn * (pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
@@ -101,6 +105,8 @@ export class Arbitrage extends Strategy {
             let orders = []
             for (const pool of this.poolChain.reverse()) {
                 let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
+
+                let amountIn = !pool.a2b ? this.defaultAmounts[pool.coinA.type] : this.defaultAmounts[pool.coinB.type]
 
                 // recall that in this case, `pool.a2b` is false, so B is inbound
                 //console.log('\n\nREV AMOUNT IN: ' + amountIn)
