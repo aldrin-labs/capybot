@@ -3,7 +3,7 @@ import { Keypair } from '@mysten/sui.js/cryptography'
 import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
 
 import { Capybot } from './capybot'
-import { Coin, Assets } from './coins'
+import { Assets } from './coins'
 import { CetusPool } from './dexs/cetus/cetus'
 import { Arbitrage } from './strategies/arbitrage'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'

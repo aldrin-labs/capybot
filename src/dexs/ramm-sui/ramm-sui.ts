@@ -13,8 +13,18 @@ import { logger } from '../../logger'
 
 
 export class RAMMPool extends Pool<RAMMSuiParams> {
-    private rammSuiPool: RAMMSuiPool
-    private suiClient: SuiClient
+    public rammSuiPool: RAMMSuiPool
+    public suiClient: SuiClient
+
+    /**
+     * The SUI address of the SUI token, in short and long form.
+     *
+     * Needed when selecting a coin for payment with the RAMM SDK - if the payment is in SUI, the
+     * gas object must be split.
+     *
+     * In order to know whether the payment is in SUI, the asset type must be compared to these
+     * values.
+     */
     private static readonly SUI_ADDRESS_SHORT: string = '0x2::SUI::sui'
     private static readonly SUI_ADDRESS_LONG: string =
         '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'
@@ -240,62 +250,4 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
                 priceEstimationEventJSON.protocol_fee / amountIn,
         }
     }
-
-    async getPoolStateAndImbalanceRatios(suiClient: SuiClient, sender: string) {
-        const txb = new TransactionBlock();
-        this.rammSuiPool.getPoolState(txb);
-        this.rammSuiPool.getPoolImbalanceRatios(txb);
-
-        let resp = await suiClient.devInspectTransactionBlock({
-            sender,
-            transactionBlock: txb,
-        });
-
-        const poolStateEvent = resp.events!.filter((event) => event.type.split('::')[2] === 'PoolStateEvent')[0];
-        const poolStateEventJSON = poolStateEvent.parsedJson as PoolStateEvent;
-
-        const imbRatioEvent = resp.events!.filter((event) => event.type.split('::')[2] === 'ImbalanceRatioEvent')[0];
-        const imbRatioEventJSON = imbRatioEvent.parsedJson as ImbalanceRatioEvent;
-    }
-}
-
-/**
- * Structure representing a RAMM's pool state query, processed from its Sui Move event JSON.
- */
-export type RAMMPoolState = {
-    rammID: string,
-    assetBalances: Record<string, number>,
-    assetLPTIssued: Record<string, number>
-}
-
-function processPoolStateEvent(rammSuiPool: RAMMSuiPool, poolStateEvent: PoolStateEvent): RAMMPoolState {
-    let assetBalances: Record<string, number> = {}
-    let assetLPTIssued: Record<string, number> = {}
-
-    for (let i = 0; i < poolStateEvent.asset_types.length; i++) {
-        let assetType = poolStateEvent.asset_types[i].name
-        const assetIndex = rammSuiPool.assetTypeIndices.get(assetType)
-        const assetTicker = rammSuiPool.assetConfigs[assetIndex!].assetTicker
-
-        const assetDecimalPlaces = rammSuiPool.assetConfigs[assetIndex!].assetDecimalPlaces
-        let assetBalance = poolStateEvent.asset_balances[i] / (10 ** assetDecimalPlaces)
-        let assetLPT = poolStateEvent.asset_lpt_issued[i] / (10 ** assetDecimalPlaces)
-
-        assetBalances[assetTicker] = assetBalance
-        assetLPTIssued[assetTicker] = assetLPT
-    }
-
-    return {
-        rammID: poolStateEvent.ramm_id,
-        assetBalances,
-        assetLPTIssued
-    }
-}
-
-/**
- * Structure representing a RAMM's imbalance ratio data.
- */
-export type RAMMImbalanceRatioData = {
-    rammID: string,
-    imb_ratios: Record<string, number>
 }
