@@ -179,6 +179,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         } catch (e) {
             logger.error(e)
         }
+        console.log(`\n\nramm\n\n`)
 
         return transactionBlock
     }
@@ -195,7 +196,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         fee: number
     }> {
         const amountIn = 0.1 * 10 ** this.coinA.decimals
-        
+
         const estimate_txb: TransactionBlock =
             this.rammSuiPool.estimatePriceWithAmountIn({
                 assetIn: this.coinA.type,

@@ -23,12 +23,15 @@ const ARBITRAGE_DEFAULT_AMOUNT = 0.1
 
 const MARKET_DIFFERENCE_LIMIT = 1.01
 
+const adminPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
+export const adminKey = Ed25519Keypair.deriveKeypair(adminPhrase!)
+console.log(`using key ${adminKey.toSuiAddress()}`)
 // Setup wallet from passphrase.
-const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
-export const cetusUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(cetusUsdcSuiPhrase!)
+//const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
+//export const cetusUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(cetusUsdcSuiPhrase!)
 
-const rammUsdcSuiPhrase = process.env.RAMM_SUI_USDC_ADMIN_PHRASE
-export const rammUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(rammUsdcSuiPhrase!)
+//const rammUsdcSuiPhrase = process.env.RAMM_SUI_USDC_ADMIN_PHRASE
+//export const rammUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(rammUsdcSuiPhrase!)
 
 enum SupportedPools {
     Cetus,
@@ -44,24 +47,24 @@ export const poolAddresses: { [key in SupportedPools]: Record<string, PoolData> 
     [SupportedPools.Cetus]: {
         "SUI/USDC": {
             address: "0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630",
-            keypair: cetusUsdcSuiKeypair
+            keypair: adminKey
         }
     },
     [SupportedPools.RAMM]: {
         "SUI/USDC": {
             address: "0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7",
-            keypair: rammUsdcSuiKeypair
+            keypair: adminKey
         }
     }
 }
 
-let capybot = new Capybot('mainnet')
+let capybot = new Capybot('mainnet', adminKey)
 
 const cetusUSDCtoSUI = new CetusPool(
     '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
     Assets.USDC,
     Assets.SUI,
-    cetusUsdcSuiKeypair,
+    adminKey,
     'mainnet'
 )
 
@@ -70,7 +73,7 @@ const rammSUItoUSDC = new RAMMPool(
     '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
     Assets.SUI,
     Assets.USDC,
-    rammUsdcSuiKeypair,
+    adminKey,
     'mainnet'
 )
 
@@ -82,8 +85,8 @@ const rammSUItoUSDC = new RAMMPool(
     'mainnet'
 ) */
 
-capybot.addPool(cetusUSDCtoSUI, cetusUsdcSuiKeypair, true)
-capybot.addPool(rammSUItoUSDC, rammUsdcSuiKeypair, true)
+capybot.addPool(cetusUSDCtoSUI, adminKey, true)
+capybot.addPool(rammSUItoUSDC, adminKey, true)
 // TODO: fix the way `capybot` stores pool information, so that a RAMM pool with over 2 assets
 // can be added more than once e.g. for its `SUI/USDC` and `SUI/USDT` pairs.
 // FIXED, although the below still needs its own keypair loaded with SUI and USDT to work.

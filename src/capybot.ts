@@ -12,6 +12,7 @@ import { logger } from './logger'
 import { Strategy } from './strategies/strategy'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
 import { Int } from 'ccxt/js/src/base/types'
+import { Assets } from './coins'
 
 // Default gas budget: 0.5 `SUI`
 const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
@@ -47,14 +48,16 @@ export class Capybot {
 
     private suiClient: SuiClient
     private network: SuiNetworks
+    private botKeypair: Keypair
 
     private rebalanceKeypairs: Set<Keypair>
     private coinTypes: Set<string>
     private maxDelta: number
 
-    constructor(network: SuiNetworks, maxDelta: number = 0.2) {
+    constructor(network: SuiNetworks, botKeypair: Keypair, maxDelta: number = 0.2) {
         this.network = network
         this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
+        this.botKeypair = botKeypair
         this.rebalanceKeypairs = new Set<Keypair>()
         this.coinTypes = new Set<string>()
         this.maxDelta = maxDelta
@@ -73,9 +76,8 @@ export class Capybot {
         }
         logger.info({ strategies: uniqueStrategies }, 'strategies')
 
-        let transactionBlock: TransactionBlock = new TransactionBlock()
         mainloop: while (new Date().getTime() - startTime < duration) {
-            await this.rebalance()
+            //await this.rebalance()
             for (const uri in this.dataSources) {
                 let dataSource = this.dataSources[uri]
                 let data = await dataSource.getData()
@@ -101,6 +103,7 @@ export class Capybot {
                     let tradeOrders = strategy.evaluate(data)
 
                     // Create transactions for the suggested trades
+                    let txb = new TransactionBlock()
                     for (const order of tradeOrders) {
                         logger.info(
                             { strategy: strategy.uri, decision: order },
@@ -115,40 +118,23 @@ export class Capybot {
                         const byAmountIn: boolean = true
                         const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
-                        if (this.pools[order.poolUuid] instanceof CetusPool) {
-                            transactionBlock = new TransactionBlock()
-                            transactionBlock = await this.pools[
-                                order.poolUuid
-                            ].createSwapTransaction(transactionBlock, {
-                                a2b,
-                                amountIn,
-                                amountOut,
-                                byAmountIn,
-                                slippage,
-                            })
-
-                            // Execute the transaction
-                            await this.executeTransactionBlock(
-                                transactionBlock,
-                                this.poolKeypairs[order.poolUuid],
-                                strategy
-                            );
-                        } else if (this.pools[order.poolUuid] instanceof RAMMPool) {
-                            transactionBlock = new TransactionBlock()
-                            transactionBlock = await this.pools[
-                                order.poolUuid
-                            ].createSwapTransaction(transactionBlock, {
-                                a2b,
-                                amountIn,
-                            })
-
-                            await this.executeTransactionBlock(
-                                transactionBlock,
-                                this.poolKeypairs[order.poolUuid],
-                                strategy
-                            );
-                        }
+                        txb = await this.pools[
+                            order.poolUuid
+                        ].createSwapTransaction(txb, {
+                            a2b,
+                            amountIn,
+                            amountOut,
+                            byAmountIn,
+                            slippage,
+                        })
                     }
+
+                    // Execute the transaction
+                    await this.executeTransactionBlock(
+                        txb,
+                        this.botKeypair,
+                        strategy
+                    );
                 }
             }
             await setTimeout(delay)
@@ -156,7 +142,6 @@ export class Capybot {
     }
 
     private async rebalance() {
-
         logger.info("checking if needs rebalance")
         const balances = new Map<string, number[]>()
         const rebalance = new Map<string, number[]>()

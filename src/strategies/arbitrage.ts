@@ -74,7 +74,7 @@ export class Arbitrage extends Strategy {
         if (arbitrage > this.lowerLimit) {
             // The amount of A by trading around the chain is higher than the amount in.
             let orders = []
-            
+
             for (const pool of this.poolChain) {
                 let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
 
