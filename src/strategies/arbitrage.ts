@@ -2,12 +2,23 @@ import { DataPoint, DataType } from '../data_sources/data_point'
 import { Strategy } from './strategy'
 import { TradeOrder } from './order'
 import { Coin } from '../coins'
+import { Pool } from '../dexs/pool'
+import { CetusParams, RAMMSuiParams } from '../dexs/dexsParams'
 
 type PoolWithDirection = {
     poolUuid: string
     coinA: Coin
     coinB: Coin
     a2b: boolean
+}
+
+function poolWDirFromPool(pool: Pool<CetusParams | RAMMSuiParams>, a2b: boolean): PoolWithDirection {
+    return {
+        poolUuid: pool.uuid,
+        coinA: pool.coinA,
+        coinB: pool.coinB,
+        a2b: a2b,
+    }
 }
 
 export class Arbitrage extends Strategy {
@@ -32,15 +43,18 @@ export class Arbitrage extends Strategy {
      * @param name A human-readable name for this strategy.
      */
     constructor(
-        poolChain: Array<PoolWithDirection>,
+        poolChainNoDirection: Array<{pool: Pool<CetusParams | RAMMSuiParams>, a2b: boolean}>,
         defaultAmounts: Record<string, number>,
         relativeLimit: number,
         name: string
     ) {
+        const poolChain = poolChainNoDirection.map(obj => poolWDirFromPool(obj.pool, obj.a2b))
+
         super({
             name: name,
             poolChain: poolChain,
         })
+
         this.poolChain = poolChain
         this.defaultAmounts = defaultAmounts
         this.lowerLimit = relativeLimit

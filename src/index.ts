@@ -63,6 +63,11 @@ export const poolAddresses: { [key in SupportedPools]: Record<string, PoolData> 
 
 let capybot = new Capybot('mainnet')
 
+/**
+ * Cetus USDC/SUI pool
+ *
+ * Note that the order in which the assets are declared is important!
+ */
 const cetusUSDCtoSUI = new CetusPool(
     '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
     Assets.USDC,
@@ -71,6 +76,11 @@ const cetusUSDCtoSUI = new CetusPool(
     'mainnet'
 )
 
+/**
+ * RAMM SUI/USDC pool
+ *
+ * Again, note that the order in which the assets are declared is important!
+ */
 const rammSUItoUSDC = new RAMMPool(
     rammSuiConfigs[SuiSupportedNetworks.mainnet][0],
     '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
@@ -104,15 +114,11 @@ capybot.addStrategy(
     new Arbitrage(
         [
             {
-                poolUuid: cetusUSDCtoSUI.uuid,
-                coinA: cetusUSDCtoSUI.coinA,
-                coinB: cetusUSDCtoSUI.coinB,
+                pool: cetusUSDCtoSUI,
                 a2b: true,
             },
             {
-                poolUuid: rammSUItoUSDC.uuid,
-                coinA: rammSUItoUSDC.coinA,
-                coinB: rammSUItoUSDC.coinB,
+                pool: rammSUItoUSDC,
                 a2b: true,
             }
         ],
