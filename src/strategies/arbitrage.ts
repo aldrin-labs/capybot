@@ -31,12 +31,14 @@ export class Arbitrage extends Strategy {
         poolChain: Array<PoolWithDirection>,
         defaultAmount: number,
         relativeLimit: number,
-        name: string
+        name: string,
+        slippage: number
     ) {
         super({
             name: name,
             poolChain: poolChain,
-        })
+        },
+            slippage)
         this.poolChain = poolChain
         this.defaultAmount = defaultAmount
         this.lowerLimit = relativeLimit
@@ -68,7 +70,6 @@ export class Arbitrage extends Strategy {
             arbitrageReverse *= (1 - this.latestFee[pool.poolUuid]) * (1 / rate)
         }
         this.logStatus({ arbitrage: arbitrage, reverse: arbitrageReverse })
-
         let amountIn: number = this.defaultAmount
 
         if (arbitrage > this.lowerLimit) {

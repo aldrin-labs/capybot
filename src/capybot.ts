@@ -104,19 +104,23 @@ export class Capybot {
 
                     // Create transactions for the suggested trades
                     let txb = new TransactionBlock()
+                    let amountIn = Number(0)
                     for (const order of tradeOrders) {
                         logger.info(
                             { strategy: strategy.uri, decision: order },
                             'order'
                         )
+                        if (amountIn === 0) { amountIn = Math.round(order.amountIn) }
 
-                        let amountIn = Math.round(order.amountIn)
-                        let amountOut = Math.round(
-                            order.estimatedPrice * amountIn
-                        )
                         const a2b: boolean = order.a2b
+                        const pool = this.pools[order.poolUuid]
+                        const magMod = !a2b ? 10 ** pool.coinA.decimals / 10 ** pool.coinB.decimals : 10 ** pool.coinB.decimals / 10 ** pool.coinA.decimals
+                        let amountOut = Math.round(
+                            order.estimatedPrice * amountIn * magMod
+                        )
+                        console.log(amountIn, amountOut, order.estimatedPrice)
                         const byAmountIn: boolean = true
-                        const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
+                        const slippage: number = 0.95 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
                         txb = await this.pools[
                             order.poolUuid
@@ -127,6 +131,8 @@ export class Capybot {
                             byAmountIn,
                             slippage,
                         })
+
+                        amountIn = amountOut
                     }
 
                     // Execute the transaction

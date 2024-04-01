@@ -163,23 +163,27 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             ? { assetIn: this.coinA.type, assetOut: this.coinB.type }
             : { assetIn: this.coinB.type, assetOut: this.coinA.type }
 
-        try {
-            const { newCoinObj } = await this.prepareCoinForPaymentCommon(
-                transactionBlock,
-                assetIn,
-                params.amountIn
-            )
+        const { newCoinObj } = await this.prepareCoinForPaymentCommon(
+            transactionBlock,
+            assetIn,
+            params.amountIn
+        )
 
-            this.rammSuiPool.tradeAmountIn(transactionBlock, {
-                assetIn,
-                assetOut,
-                amountIn: newCoinObj,
-                minAmountOut: 1,
-            })
-        } catch (e) {
-            logger.error(e)
+        let minOut = 1
+        if (params.minAmountOut) {
+            minOut = params.minAmountOut
+            if (params.slippage) {
+                minOut *= params.slippage
+            }
         }
-        console.log(`\n\nramm\n\n`)
+
+        this.rammSuiPool.tradeAmountIn(transactionBlock, {
+            assetIn,
+            assetOut,
+            amountIn: newCoinObj,
+            minAmountOut: minOut,
+        })
+        console.log(`ramm`)
 
         return transactionBlock
     }

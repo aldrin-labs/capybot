@@ -69,7 +69,7 @@ export class CetusPool extends Pool<CetusParams> {
             }), is: ${totalBalance} and amountIn is: ${params.amountIn}`
         )
 
-        console.log(`\n\ncetus\n\n`)
+        console.log(`cetus`)
         if (params.amountIn > 0 && Number(totalBalance) >= params.amountIn) {
             transactionBlock = await this.createCetusTransactionBlockWithSDK(transactionBlock, params)
 
@@ -156,7 +156,7 @@ export class CetusPool extends Pool<CetusParams> {
         // input token amount is token a
         const byAmountIn = true
         // slippage value
-        const slippage = Percentage.fromDecimal(d(5))
+        const slippage = Percentage.fromDecimal(d(params.slippage))
         // Fetch pool data
         const pool = await this.sdk.Pool.getPool(this.address)
         // Estimated amountIn amountOut fee

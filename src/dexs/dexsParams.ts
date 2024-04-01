@@ -33,7 +33,8 @@ export type RAMMSuiParams = {
      * The amount of the inbound asset to trade.
      */
     amountIn: number,
-    //minAmountOut: number,
+    slippage?: number,
+    minAmountOut?: number,
 }
 
 /**
