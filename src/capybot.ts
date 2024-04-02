@@ -11,10 +11,15 @@ import { Pool } from './dexs/pool'
 import { logger } from './logger'
 import { Strategy } from './strategies/strategy'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
-import { TradeEvent, processImbRatioEvent, processPoolStateEvent } from '@ramm/ramm-sui-sdk'
+import {
+    RAMMSuiPool,
+    TradeEvent,
+    processImbRatioEvent,
+    processPoolStateEvent,
+} from '@ramm/ramm-sui-sdk'
 
 // Default gas budget: 0.5 `SUI`
-const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
+const DEFAULT_GAS_BUDGET: number = 0.5 * 10 ** 9
 
 /**
  * A simple trading bot which subscribes to a number of trading pools across different DEXs. The bot may use multiple
@@ -130,12 +135,14 @@ export class Capybot {
                             })
 
                             // Execute the transaction
-/*                             await this.executeTransactionBlock(
+                            /*                             await this.executeTransactionBlock(
                                 transactionBlock,
                                 this.poolKeypairs[order.poolUuid],
                                 strategy
                             ); */
-                        } else if (this.pools[order.poolUuid] instanceof RAMMPool) {
+                        } else if (
+                            this.pools[order.poolUuid] instanceof RAMMPool
+                        ) {
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
                                 order.poolUuid
@@ -144,40 +151,17 @@ export class Capybot {
                                 amountIn,
                             })
 
-                            const rammTxResponse = await this.executeTransactionBlock(
-                                transactionBlock,
-                                this.poolKeypairs[order.poolUuid],
-                                strategy,
-                                /*showEvents = */true
-                            );
+                            const rammTxResponse =
+                                await this.executeTransactionBlock(
+                                    transactionBlock,
+                                    this.poolKeypairs[order.poolUuid],
+                                    strategy,
+                                    /*showEvents = */ true
+                                )
 
-                            if (rammTxResponse) {
-                                // Update the volume of the pool
-                                const ramm = (this.pools[order.poolUuid] as RAMMPool).rammSuiPool
-                                // A tx with a single RAMM trade will emit exactly one event of this type.
-                                const tradeEvent = rammTxResponse.events!.filter((event) => event.type.split('::')[2] === 'TradeEvent')[0];
-                                if (tradeEvent === undefined) {
-                                    throw new Error('No ImbalanceRatioEvent found in the response');
-                                }
-
-                                const tradeEventParsedJSON = tradeEvent.parsedJson as TradeEvent
-                                const assetInIndex = ramm.assetTypeIndices.get(tradeEventParsedJSON.token_in.name)
-                                const assetIn = ramm.assetConfigs[assetInIndex!]
-                                const assetOutIndex = ramm.assetTypeIndices.get(tradeEventParsedJSON.token_out.name)
-                                const assetOut = ramm.assetConfigs[assetOutIndex!]
-
-                                const amountIn = tradeEventParsedJSON.amount_in / 10 ** assetIn.assetDecimalPlaces
-                                const amountOut = tradeEventParsedJSON.amount_out / 10 ** assetOut.assetDecimalPlaces + tradeEventParsedJSON.protocol_fee / 10 ** assetOut.assetDecimalPlaces
-                                
-                                this.rammPoolsVolume[order.poolUuid][assetIn.assetTicker] += amountIn
-                                this.rammPoolsVolume[order.poolUuid][assetOut.assetTicker] += amountOut
-
-                                // log volumes for consumption by `capybot-monitor`, but only after cleaning
-                                // this code up - messy
-                                // ...
-                            }
-
-
+                            const ramm = (
+                                this.rammPools[order.poolUuid] as RAMMPool
+                            ).rammSuiPool
                         }
                     }
                 }
@@ -189,42 +173,98 @@ export class Capybot {
 
                 // log RAMM pool states and imbalance ratios
                 try {
-                    const { poolStateEventJSON, imbRatioEventJSON } = await rammPool.rammSuiPool.getPoolStateAndImbalanceRatios(
+                    const { poolStateEventJSON, imbRatioEventJSON } =
+                        await rammPool.rammSuiPool.getPoolStateAndImbalanceRatios(
                             rammPool.suiClient,
                             rammKeypair.toSuiAddress()
                         )
 
-                    const poolState = processPoolStateEvent(rammPool.rammSuiPool, poolStateEventJSON)
-                    const imbRatioData = processImbRatioEvent(rammPool.rammSuiPool, imbRatioEventJSON)
-    
+                    const poolState = processPoolStateEvent(
+                        rammPool.rammSuiPool,
+                        poolStateEventJSON
+                    )
+                    const imbRatioData = processImbRatioEvent(
+                        rammPool.rammSuiPool,
+                        imbRatioEventJSON
+                    )
+
                     logger.info(
-                        { ramm_id: poolState.rammID, data: poolState.assetBalances },
+                        {
+                            ramm_id: poolState.rammID,
+                            data: poolState.assetBalances,
+                        },
                         'ramm pool state'
                     )
-    
+
                     logger.info(
-                        { ramm_id: imbRatioData.rammID, data: imbRatioData.imbRatios},
+                        {
+                            ramm_id: imbRatioData.rammID,
+                            data: imbRatioData.imbRatios,
+                        },
                         'imb ratios'
                     )
-                } catch(e) {
+                } catch (e) {
                     logger.error(e)
-                };
+                }
 
                 // log RAMM pool volumes
-                
             }
-
 
             await setTimeout(delay)
         }
     }
 
     /**
+     * Given the SDK representation of a RAMM, and a trade's tx response, update the bot's record
+     * of the RAMM's pool volumes.
+     *
+     * @param rammTxResponse
+     * @param ramm 
+     */
+    private async updateRAMMPoolVolumes(
+        rammTxResponse: SuiTransactionBlockResponse | undefined,
+        ramm: RAMMSuiPool
+    ) {
+        if (rammTxResponse) {
+            // A tx with a single RAMM trade will emit exactly one event of this type.
+            const tradeEvent = rammTxResponse.events!.filter(
+                (event) => event.type.split('::')[2] === 'TradeEvent'
+            )[0]
+            if (tradeEvent === undefined) {
+                throw new Error('No TradeEvent found in the response')
+            }
+
+            const tradeEventParsedJSON = tradeEvent.parsedJson as TradeEvent
+            const assetInIndex = ramm.assetTypeIndices.get(
+                tradeEventParsedJSON.token_in.name
+            )
+            const assetIn = ramm.assetConfigs[assetInIndex!]
+            const assetOutIndex = ramm.assetTypeIndices.get(
+                tradeEventParsedJSON.token_out.name
+            )
+            const assetOut = ramm.assetConfigs[assetOutIndex!]
+
+            const amountIn =
+                tradeEventParsedJSON.amount_in / 10 ** assetIn.assetDecimalPlaces
+            const amountOut =
+                tradeEventParsedJSON.amount_out / 10 ** assetOut.assetDecimalPlaces +
+                tradeEventParsedJSON.protocol_fee / 10 ** assetOut.assetDecimalPlaces
+
+            this.rammPoolsVolume[ramm.poolAddress][assetIn.assetTicker] += amountIn
+            this.rammPoolsVolume[ramm.poolAddress][assetOut.assetTicker] += amountOut
+
+            // TODO: log volumes for consumption by `capybot-monitor`, but only after cleaning
+            // this code up - messy
+            // ...
+        }
+    }
+
+    /**
      * Signs and executes a transaction block, if it has any transactions in it.
-     * @param transactionBlock 
-     * @param keypair 
-     * @param strategy 
-     * @param showEvents 
+     * @param transactionBlock
+     * @param keypair
+     * @param strategy
+     * @param showEvents
      * @returns The response obtained from executing the transaction block, `void` otherwise.
      */
     private async executeTransactionBlock(
@@ -243,14 +283,14 @@ export class Capybot {
                         options: {
                             showObjectChanges: true,
                             showEffects: true,
-                            showEvents
+                            showEvents,
                         },
                     })
                 logger.info(
                     { strategy: strategy, transaction: result },
                     'transaction'
                 )
-    
+
                 return result
             } catch (e) {
                 logger.error(e)
@@ -283,10 +323,7 @@ export class Capybot {
     }
 
     /** Add a new pool for this bot to use for trading. */
-    addPool(
-        pool: Pool<CetusParams | RAMMSuiParams>,
-        keypair: Keypair
-    ) {
+    addPool(pool: Pool<CetusParams | RAMMSuiParams>, keypair: Keypair) {
         if (this.pools.hasOwnProperty(pool.uuid)) {
             const errMsg: string =
                 'Pool ' +
@@ -300,7 +337,10 @@ export class Capybot {
 
         // If the pool being added is a RAMM, and has not yet been recorded by the bot, take
         // note of it.
-        if (pool instanceof RAMMPool && !this.rammPools.hasOwnProperty(pool.uri)) {
+        if (
+            pool instanceof RAMMPool &&
+            !this.rammPools.hasOwnProperty(pool.uri)
+        ) {
             this.rammPools[pool.address] = pool as RAMMPool
         }
 
