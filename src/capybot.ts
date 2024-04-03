@@ -18,8 +18,8 @@ import {
     processPoolStateEvent,
 } from '@ramm/ramm-sui-sdk'
 
-// Default gas budget: 0.5 `SUI`
-const DEFAULT_GAS_BUDGET: number = 0.5 * 10 ** 9
+// Default gas budget: 0.1 `SUI`
+const DEFAULT_GAS_BUDGET: number = 0.1 * 10 ** 9
 
 /**
  * A simple trading bot which subscribes to a number of trading pools across different DEXs. The bot may use multiple
@@ -87,9 +87,8 @@ export class Capybot {
                 let data = await dataSource.getData()
 
                 if (!data) {
-                    logger.error(
-                        { dataSource: dataSource.uri },
-                        'No data received from data source; skipping round.'
+                    console.error(
+                        'No data received from data source ' + dataSource.uri + '; skipping round.'
                     )
                     continue mainloop
                 }
@@ -124,6 +123,7 @@ export class Capybot {
                         if (this.pools[order.poolUuid] instanceof CetusPool) {
                             // reset the txb - one txb per pool
                             transactionBlock = new TransactionBlock()
+
                             transactionBlock = await this.pools[
                                 order.poolUuid
                             ].createSwapTransaction(transactionBlock, {
@@ -144,6 +144,7 @@ export class Capybot {
                             this.pools[order.poolUuid] instanceof RAMMPool
                         ) {
                             transactionBlock = new TransactionBlock()
+
                             transactionBlock = await this.pools[
                                 order.poolUuid
                             ].createSwapTransaction(transactionBlock, {
@@ -156,7 +157,7 @@ export class Capybot {
                                     transactionBlock,
                                     this.poolKeypairs[order.poolUuid],
                                     strategy,
-                                    /*showEvents = */ true
+                                    /* showEvents = */true
                                 )
 
                             if (rammTxResponse) {
@@ -171,7 +172,14 @@ export class Capybot {
                 }
             }
 
+            /**
+             * RAMM specific - log TVL, volume and imbalance ratios
+             */
             this.logRAMMTVLAndImbRations()
+            this.logRAMMVolumes()
+            /**
+             *
+             */
 
             await setTimeout(delay)
         }
@@ -223,18 +231,14 @@ export class Capybot {
             // this code up - messy
             // ...
         } else {
-            logger.error(
-                {
-                    ramm_id: ramm.poolAddress,
-                    response: rammTxResponse,
-                },
-                'ramm trade failed'
+            console.error(
+                `Trade failed with RAMM with ID ${ramm.poolAddress}: ` + rammTxResponse.errors
             )
         }
     }
 
     /**
-     * Logs data each of the RAMM pools known to the bot:
+     * Logs the following data for each of the RAMM pools known to the bot:
      * * their per-asset TVL, and
      * * their imbalance ratios
      *
@@ -284,6 +288,22 @@ export class Capybot {
     }
 
     /**
+     * For each of the RAMM pools known to the bot, log each of their assets' volumes at the
+     * moment of the query, beginning the count from the moment the bot started operating.
+     */
+    logRAMMVolumes() {
+        for (const rammAddress in this.rammPoolsVolume) {
+            logger.info(
+                {
+                    ramm_id: rammAddress,
+                    data: this.rammPoolsVolume[rammAddress],
+                },
+                'ramm volumes'
+            )
+        }
+    }
+
+    /**
      * Signs and executes a transaction block, if it has any transactions in it.
      * @param transactionBlock
      * @param keypair
@@ -317,7 +337,7 @@ export class Capybot {
 
                 return result
             } catch (e) {
-                logger.error(e)
+                console.error(e)
             }
         }
     }
@@ -361,21 +381,25 @@ export class Capybot {
 
         // If the pool being added is a RAMM, and has not yet been recorded by the bot, take
         // note of it.
-        if (
-            pool instanceof RAMMPool &&
-            !this.rammPools.hasOwnProperty(pool.uri)
-        ) {
-            this.rammPools[pool.address] = pool as RAMMPool
-        }
+        if (pool instanceof RAMMPool) {
+            // If the pool has not already been added to the RAMM pool state/imb. ratio tracker, do
+            // so.
+            // Recall that that field is keyed by a RAMM's address, and not its UUID.
+            if (!this.rammPools.hasOwnProperty(pool.address)) {
+                this.rammPools[pool.address] = pool as RAMMPool
+            }
 
-        if (!this.rammPoolsVolume.hasOwnProperty(pool.uri)) {
-            this.rammPoolsVolume[pool.uri] = {}
+            // If the pool doesn't already exist in the bot's RAMM volume tracker, add it.
+            // Recall that that field is keyed by a RAMM's address, and not its UUID.
+            if (!this.rammPoolsVolume.hasOwnProperty(pool.address)) {
+                const ramm = pool as RAMMPool
+                this.rammPoolsVolume[ramm.address] = {}
 
-            const ramm = pool as RAMMPool
-            // For every asset in the RAMM, initialize its volume to 0
-            // Key that asset's volume by the asset's ticker, e.g. bitcoin's in 'BTC'.
-            for (const asset of ramm.rammSuiPool.assetConfigs) {
-                this.rammPoolsVolume[pool.uri][asset.assetTicker] = 0
+                // For every asset in the RAMM, initialize its volume to 0
+                // Key that asset's volume by the asset's ticker, e.g. bitcoin's in 'BTC'.
+                for (const asset of ramm.rammSuiPool.assetConfigs) {
+                    this.rammPoolsVolume[ramm.address][asset.assetTicker] = 0
+                }
             }
         }
 
