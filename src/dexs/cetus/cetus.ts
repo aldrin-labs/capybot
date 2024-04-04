@@ -18,7 +18,6 @@ import { Pool } from '../pool'
 import { clmmMainnet } from './mainnet_config'
 import { Coin } from '../../coins'
 
-
 function buildSdkOptions(network: SuiNetworks): SdkOptions {
     switch (network) {
         case 'mainnet':
@@ -85,7 +84,8 @@ export class CetusPool extends Pool<CetusParams> {
         const pool = await this.sdk.Pool.getPool(this.address)
         const price = pool.current_sqrt_price ** 2 / 2 ** 128
 
-        const scaled_price = price * (10 ** (this.coinA.decimals - this.coinB.decimals))
+        const scaled_price =
+            price * 10 ** (this.coinA.decimals - this.coinB.decimals)
 
         let fee = pool.fee_rate * 10 ** -6
 

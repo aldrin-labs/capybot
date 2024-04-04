@@ -34,7 +34,8 @@ export abstract class Pool<
      *
      * Generated from https://www.uuidgenerator.net/.
      */
-    public static readonly POOL_UUID_NAMESPACE = '8b05a61f-0c4c-428c-9a91-8955d8119419'
+    public static readonly POOL_UUID_NAMESPACE =
+        '8b05a61f-0c4c-428c-9a91-8955d8119419'
 
     /**
      * Sui address of the pool.
@@ -58,7 +59,7 @@ export abstract class Pool<
      * @param coinB The coin type B for the pool.
      */
     constructor(address: string, coinA: Coin, coinB: Coin) {
-        const types: string[] = [address];
+        const types: string[] = [address]
         const coinTypeA = coinA.type
         const coinTypeB = coinB.type
 
@@ -66,7 +67,7 @@ export abstract class Pool<
             types.push(...[coinTypeA, coinTypeB])
         } else {
             types.push(...[coinTypeB, coinTypeA])
-        };
+        }
 
         const uuid: string = uuidv5(types.join(), Pool.POOL_UUID_NAMESPACE)
         super(uuid)
@@ -75,7 +76,6 @@ export abstract class Pool<
         this.address = address
         this.coinA = coinA
         this.coinB = coinB
-
     }
 
     /**

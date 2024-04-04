@@ -12,7 +12,10 @@ type PoolWithDirection = {
     a2b: boolean
 }
 
-function poolWDirFromPool(pool: Pool<CetusParams | RAMMSuiParams>, a2b: boolean): PoolWithDirection {
+function poolWDirFromPool(
+    pool: Pool<CetusParams | RAMMSuiParams>,
+    a2b: boolean
+): PoolWithDirection {
     return {
         poolUuid: pool.uuid,
         coinA: pool.coinA,
@@ -43,12 +46,17 @@ export class Arbitrage extends Strategy {
      * @param name A human-readable name for this strategy.
      */
     constructor(
-        poolChainNoDirection: Array<{pool: Pool<CetusParams | RAMMSuiParams>, a2b: boolean}>,
+        poolChainNoDirection: Array<{
+            pool: Pool<CetusParams | RAMMSuiParams>
+            a2b: boolean
+        }>,
         defaultAmounts: Record<string, number>,
         relativeLimit: number,
         name: string
     ) {
-        const poolChain = poolChainNoDirection.map(obj => poolWDirFromPool(obj.pool, obj.a2b))
+        const poolChain = poolChainNoDirection.map((obj) =>
+            poolWDirFromPool(obj.pool, obj.a2b)
+        )
 
         super({
             name: name,
@@ -94,10 +102,16 @@ export class Arbitrage extends Strategy {
             for (const pool of this.poolChain) {
                 let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
 
-                let amountIn = pool.a2b ? this.defaultAmounts[pool.coinA.type] : this.defaultAmounts[pool.coinB.type]
+                let amountIn = pool.a2b
+                    ? this.defaultAmounts[pool.coinA.type]
+                    : this.defaultAmounts[pool.coinB.type]
 
                 //console.log('\n\nAMOUNT IN: ' + amountIn)
-                const scaledAmountIn = amountIn * (pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                const scaledAmountIn =
+                    amountIn *
+                    (pool.a2b
+                        ? 10 ** pool.coinA.decimals
+                        : 10 ** pool.coinB.decimals)
                 //console.log('SCALED AMOUNT IN: ' + scaledAmountIn)
                 //console.log('ASSET IN: ' + (pool.a2b ? pool.coinA.type : pool.coinB.type))
 
@@ -120,11 +134,17 @@ export class Arbitrage extends Strategy {
             for (const pool of this.poolChain.reverse()) {
                 let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
 
-                let amountIn = !pool.a2b ? this.defaultAmounts[pool.coinA.type] : this.defaultAmounts[pool.coinB.type]
+                let amountIn = !pool.a2b
+                    ? this.defaultAmounts[pool.coinA.type]
+                    : this.defaultAmounts[pool.coinB.type]
 
                 // recall that in this case, `pool.a2b` is false, so B is inbound
                 //console.log('\n\nREV AMOUNT IN: ' + amountIn)
-                const scaledAmountIn = amountIn * (!pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                const scaledAmountIn =
+                    amountIn *
+                    (!pool.a2b
+                        ? 10 ** pool.coinA.decimals
+                        : 10 ** pool.coinB.decimals)
                 //console.log('REV SCALED AMOUNT IN: ' + scaledAmountIn)
                 //console.log('REV ASSET IN: ' + (!pool.a2b ? pool.coinA.type : pool.coinB.type))
 

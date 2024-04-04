@@ -1,5 +1,8 @@
 import { PaginatedCoins, SuiClient } from '@mysten/sui.js/client'
-import { TransactionArgument, TransactionBlock } from '@mysten/sui.js/transactions'
+import {
+    TransactionArgument,
+    TransactionBlock,
+} from '@mysten/sui.js/transactions'
 import { normalizeSuiObjectId } from '@mysten/sui.js/utils'
 
 import Decimal from 'decimal.js'
