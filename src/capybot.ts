@@ -120,10 +120,11 @@ export class Capybot {
                         const byAmountIn: boolean = true
                         const slippage: number = 1 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
-                        if (this.pools[order.poolUuid] instanceof CetusPool) {
+                        const orderPool = this.pools[order.poolUuid]
+
+                        if (orderPool instanceof CetusPool) {
                             // reset the txb - one txb per pool
                             transactionBlock = new TransactionBlock()
-
                             transactionBlock = await this.pools[
                                 order.poolUuid
                             ].createSwapTransaction(transactionBlock, {
@@ -141,10 +142,9 @@ export class Capybot {
                                 strategy
                             );
                         } else if (
-                            this.pools[order.poolUuid] instanceof RAMMPool
+                            orderPool instanceof RAMMPool
                         ) {
                             transactionBlock = new TransactionBlock()
-
                             transactionBlock = await this.pools[
                                 order.poolUuid
                             ].createSwapTransaction(transactionBlock, {
@@ -161,7 +161,7 @@ export class Capybot {
                                 )
 
                             if (rammTxResponse) {
-                                const ramm = (this.rammPools[order.poolUuid] as RAMMPool).rammSuiPool
+                                const ramm = (this.rammPools[orderPool.rammSuiPool.poolAddress] as RAMMPool).rammSuiPool
 
                                 // Update the volume of each of the bot's RAMM pools with the data
                                 // from the above trade.
@@ -199,7 +199,7 @@ export class Capybot {
         if (rammTxResponse && rammTxResponse.errors === undefined && rammTxResponse.events) {
             // A tx with a single RAMM trade will emit exactly one event of this type.
             const tradeEvent = rammTxResponse.events.filter(
-                (event) => event.type.split('::')[2] === 'TradeEvent'
+                (event) => event.type.split('::')[2].startsWith('TradeEvent')
             )[0]
             if (tradeEvent === undefined) {
                 throw new Error('No TradeEvent found in the response')
@@ -207,12 +207,13 @@ export class Capybot {
 
             const tradeEventParsedJSON = tradeEvent.parsedJson as TradeEvent
             const assetInIndex = ramm.assetTypeIndices.get(
-                tradeEventParsedJSON.token_in.name
+                // Type names in Sui Move events are missing the leading '0x'
+                '0x' + tradeEventParsedJSON.token_in.name
             )
             const assetIn = ramm.assetConfigs[assetInIndex!]
-
             const assetOutIndex = ramm.assetTypeIndices.get(
-                tradeEventParsedJSON.token_out.name
+                // Type names in Sui Move events are missing the leading '0x'
+                '0x' + tradeEventParsedJSON.token_out.name
             )
             const assetOut = ramm.assetConfigs[assetOutIndex!]
 
@@ -331,7 +332,7 @@ export class Capybot {
                         },
                     })
                 logger.info(
-                    { strategy: strategy, transaction: result },
+                    { strategy: strategy, transaction_status: result.effects?.status },
                     'transaction'
                 )
 
