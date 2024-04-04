@@ -73,10 +73,11 @@ to fail at the execution stage.
 
 Note that in the case of RAMM pools, which support more than 2 assets, a phrase and an address need to be set for each
 separate instance of `Pool`:
-* If a `SUI/USDC/USDT` pool is being used twice
-    - once for its `SUI/USDC` pair, and
-    - once again for its `SUI/USDTR` pair
-  there must be a total of 2 phrases/address pairs, one pair for each of the above pools. 
+
+-   If a `SUI/USDC/USDT` pool is being used twice
+    -   once for its `SUI/USDC` pair, and
+    -   once again for its `SUI/USDTR` pair
+        there must be a total of 2 phrases/address pairs, one pair for each of the above pools.
 
 The `ADMIN_PHRASE` is the passphrase for the keypair a certain pool will use when trading, and its
 corresponding `ADMIN_ADDRESS` will then be the hexadecimal address of its account.
@@ -225,16 +226,16 @@ Installation instructions are available on the [Capybot Monitor repository](http
 
 The table below lists all the pools for the currently supported DEXs:
 
-| DEX     | Coin A - CoinB   | Pool                                                               |
-| ------- | ---------------- | ------------------------------------------------------------------ |
-| CETUS   | USDT - USDC      | 0xc8d7a1503dc2f9f5b05449a87d8733593e2f0f3e7bffd90541252782e4d2ca20 |
-|         | SUI - USDC       | 0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630 |
-|         | CETUS - SUI      | 0x2e041f3fd93646dcc877f783c1f2b7fa62d30271bdef1f21ef002cebf857bded |
-|         | WETH - USDC      | 0x5b0b24c27ccf6d0e98f3a8704d2e577de83fa574d3a9060eb8945eeb82b3e2df |
-|         | SUI - USDT       | 0xa96b0178e9d66635ce3576561429acfa925eb388683992288207dbfffde94b65 |
-|         | WSOL - SUI       | 0x014abe87a6669bec41edcaa95aab35763466acb26a46d551325b07808f0c59c1 |
-| RAMM    | SUI - USDT       | 0xcb6640194b37023f6bed705f40ff22883eb6007d4c69e72c317c64671f9f6b29 |
-|         | SUI - USDC       | 0xcb6640194b37023f6bed705f40ff22883eb6007d4c69e72c317c64671f9f6b29 |
+| DEX   | Coin A - CoinB | Pool                                                               |
+| ----- | -------------- | ------------------------------------------------------------------ |
+| CETUS | USDT - USDC    | 0xc8d7a1503dc2f9f5b05449a87d8733593e2f0f3e7bffd90541252782e4d2ca20 |
+|       | SUI - USDC     | 0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630 |
+|       | CETUS - SUI    | 0x2e041f3fd93646dcc877f783c1f2b7fa62d30271bdef1f21ef002cebf857bded |
+|       | WETH - USDC    | 0x5b0b24c27ccf6d0e98f3a8704d2e577de83fa574d3a9060eb8945eeb82b3e2df |
+|       | SUI - USDT     | 0xa96b0178e9d66635ce3576561429acfa925eb388683992288207dbfffde94b65 |
+|       | WSOL - SUI     | 0x014abe87a6669bec41edcaa95aab35763466acb26a46d551325b07808f0c59c1 |
+| RAMM  | SUI - USDT     | 0xcb6640194b37023f6bed705f40ff22883eb6007d4c69e72c317c64671f9f6b29 |
+|       | SUI - USDC     | 0xcb6640194b37023f6bed705f40ff22883eb6007d4c69e72c317c64671f9f6b29 |
 
 ## Contributing
 

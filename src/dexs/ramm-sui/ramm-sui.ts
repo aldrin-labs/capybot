@@ -1,16 +1,24 @@
 import { CoinStruct, SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
 import { Keypair } from '@mysten/sui.js/cryptography'
-import { TransactionBlock, TransactionObjectArgument } from '@mysten/sui.js/transactions'
+import {
+    TransactionBlock,
+    TransactionObjectArgument,
+} from '@mysten/sui.js/transactions'
 
 import { SuiNetworks } from '../../networks'
 
 import { RAMMSuiParams } from '../dexsParams'
 import { Pool } from '../pool'
 
-import { RAMMSuiPool, RAMMSuiPoolConfig, PriceEstimationEvent, PoolStateEvent, ImbalanceRatioEvent } from '@ramm/ramm-sui-sdk'
+import {
+    RAMMSuiPool,
+    RAMMSuiPoolConfig,
+    PriceEstimationEvent,
+    PoolStateEvent,
+    ImbalanceRatioEvent,
+} from '@ramm/ramm-sui-sdk'
 import { Coin } from '../../coins'
 import { logger } from '../../logger'
-
 
 export class RAMMPool extends Pool<RAMMSuiParams> {
     public rammSuiPool: RAMMSuiPool
@@ -210,12 +218,12 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         fee: number
     }> {
         const amountIn = this.defaultAmountCoinA * 10 ** this.coinA.decimals
-        
+
         const estimate_txb: TransactionBlock =
             this.rammSuiPool.estimatePriceWithAmountIn({
                 assetIn: this.coinA.type,
                 assetOut: this.coinB.type,
-                amountIn
+                amountIn,
             })
 
         const devInspectRes = await this.suiClient.devInspectTransactionBlock({
@@ -241,13 +249,15 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         const priceEstimationEventJSON = devInspectRes.events[0]
             .parsedJson as PriceEstimationEvent
 
-        const price = priceEstimationEventJSON.amount_out / priceEstimationEventJSON.amount_in
-        const scaledPrice = price * (10 ** (this.coinA.decimals - this.coinB.decimals))
+        const price =
+            priceEstimationEventJSON.amount_out /
+            priceEstimationEventJSON.amount_in
+        const scaledPrice =
+            price * 10 ** (this.coinA.decimals - this.coinB.decimals)
 
         return {
             price: scaledPrice,
-            fee:
-                priceEstimationEventJSON.protocol_fee / amountIn,
+            fee: priceEstimationEventJSON.protocol_fee / amountIn,
         }
     }
 }

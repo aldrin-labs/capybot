@@ -27,7 +27,11 @@ export class TokenAmount {
         if (this.coin != other.coin) {
             throw new Error('Trying to add different coin types')
         }
-        return new TokenAmount(this.amount + other.amount, this.coin, this.symbol)
+        return new TokenAmount(
+            this.amount + other.amount,
+            this.coin,
+            this.symbol
+        )
     }
 
     /**
@@ -40,7 +44,11 @@ export class TokenAmount {
         if (this.coin != other.coin) {
             throw new Error('Trying to subtract different coin types')
         }
-        return new TokenAmount(this.amount - other.amount, this.coin, this.symbol)
+        return new TokenAmount(
+            this.amount - other.amount,
+            this.coin,
+            this.symbol
+        )
     }
 
     toString(): string {

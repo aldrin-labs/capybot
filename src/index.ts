@@ -24,41 +24,49 @@ const MARKET_DIFFERENCE_LIMIT = 1.01
 /**
  * Default amount to trade, for each token. Set to approximately 0.1 USD each.
  */
-export const defaultAmounts: Record<string, number> = {};
-defaultAmounts[Assets.SUI.type] = 0.06;
-defaultAmounts[Assets.USDC.type] = 0.1;
-defaultAmounts[Assets.USDT.type] = 0.1;
+export const defaultAmounts: Record<string, number> = {}
+defaultAmounts[Assets.SUI.type] = 0.06
+defaultAmounts[Assets.USDC.type] = 0.1
+defaultAmounts[Assets.USDT.type] = 0.1
 
 // Setup wallet from passphrase.
 const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
-export const cetusUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(cetusUsdcSuiPhrase!)
+export const cetusUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(
+    cetusUsdcSuiPhrase!
+)
 
 const rammUsdcSuiPhrase = process.env.RAMM_SUI_USDC_ADMIN_PHRASE
-export const rammUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(rammUsdcSuiPhrase!)
+export const rammUsdcSuiKeypair = Ed25519Keypair.deriveKeypair(
+    rammUsdcSuiPhrase!
+)
 
 enum SupportedPools {
     Cetus,
-    RAMM
+    RAMM,
 }
 
 type PoolData = {
-    address: string,
+    address: string
     keypair: Keypair
 }
 
-export const poolAddresses: { [key in SupportedPools]: Record<string, PoolData> } = {
+export const poolAddresses: {
+    [key in SupportedPools]: Record<string, PoolData>
+} = {
     [SupportedPools.Cetus]: {
-        "SUI/USDC": {
-            address: "0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630",
-            keypair: cetusUsdcSuiKeypair
-        }
+        'SUI/USDC': {
+            address:
+                '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
+            keypair: cetusUsdcSuiKeypair,
+        },
     },
     [SupportedPools.RAMM]: {
-        "SUI/USDC": {
-            address: "0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7",
-            keypair: rammUsdcSuiKeypair
-        }
-    }
+        'SUI/USDC': {
+            address:
+                '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
+            keypair: rammUsdcSuiKeypair,
+        },
+    },
 }
 
 let capybot = new Capybot('mainnet')
@@ -106,8 +114,8 @@ capybot.addPool(rammSUItoUSDC, rammUsdcSuiKeypair)
 // FIXED, although the below still needs its own keypair loaded with SUI and USDT to work.
 //capybot.addPool(rammSUItoUSDT)
 
-console.log('Cetus USDC/SUI UUID: ' +  cetusUSDCtoSUI.uuid);
-console.log('RAMM SUI/USDC UUID: ' + rammSUItoUSDC.uuid);
+console.log('Cetus USDC/SUI UUID: ' + cetusUSDCtoSUI.uuid)
+console.log('RAMM SUI/USDC UUID: ' + rammSUItoUSDC.uuid)
 
 // Add arbitrage strategy: SUI/USDC -> USDC/SUI
 capybot.addStrategy(
@@ -120,7 +128,7 @@ capybot.addStrategy(
             {
                 pool: rammSUItoUSDC,
                 a2b: true,
-            }
+            },
         ],
         defaultAmounts,
         ARBITRAGE_RELATIVE_LIMIT,

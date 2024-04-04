@@ -88,7 +88,9 @@ export class Capybot {
 
                 if (!data) {
                     console.error(
-                        'No data received from data source ' + dataSource.uri + '; skipping round.'
+                        'No data received from data source ' +
+                            dataSource.uri +
+                            '; skipping round.'
                     )
                     continue mainloop
                 }
@@ -140,10 +142,8 @@ export class Capybot {
                                 transactionBlock,
                                 this.poolKeypairs[order.poolUuid],
                                 strategy
-                            );
-                        } else if (
-                            orderPool instanceof RAMMPool
-                        ) {
+                            )
+                        } else if (orderPool instanceof RAMMPool) {
                             transactionBlock = new TransactionBlock()
                             transactionBlock = await this.pools[
                                 order.poolUuid
@@ -157,11 +157,15 @@ export class Capybot {
                                     transactionBlock,
                                     this.poolKeypairs[order.poolUuid],
                                     strategy,
-                                    /* showEvents = */true
+                                    /* showEvents = */ true
                                 )
 
                             if (rammTxResponse) {
-                                const ramm = (this.rammPools[orderPool.rammSuiPool.poolAddress] as RAMMPool).rammSuiPool
+                                const ramm = (
+                                    this.rammPools[
+                                        orderPool.rammSuiPool.poolAddress
+                                    ] as RAMMPool
+                                ).rammSuiPool
 
                                 // Update the volume of each of the bot's RAMM pools with the data
                                 // from the above trade.
@@ -196,10 +200,14 @@ export class Capybot {
         rammTxResponse: SuiTransactionBlockResponse,
         ramm: RAMMSuiPool
     ) {
-        if (rammTxResponse && rammTxResponse.errors === undefined && rammTxResponse.events) {
+        if (
+            rammTxResponse &&
+            rammTxResponse.errors === undefined &&
+            rammTxResponse.events
+        ) {
             // A tx with a single RAMM trade will emit exactly one event of this type.
-            const tradeEvent = rammTxResponse.events.filter(
-                (event) => event.type.split('::')[2].startsWith('TradeEvent')
+            const tradeEvent = rammTxResponse.events.filter((event) =>
+                event.type.split('::')[2].startsWith('TradeEvent')
             )[0]
             if (tradeEvent === undefined) {
                 throw new Error('No TradeEvent found in the response')
@@ -220,20 +228,26 @@ export class Capybot {
             // Scale amounts to base units, disregarding each asset's (possibly) different
             // decimal places
             const amountIn =
-                tradeEventParsedJSON.amount_in / 10 ** assetIn.assetDecimalPlaces
+                tradeEventParsedJSON.amount_in /
+                10 ** assetIn.assetDecimalPlaces
             const amountOut =
-                tradeEventParsedJSON.amount_out / 10 ** assetOut.assetDecimalPlaces +
-                tradeEventParsedJSON.protocol_fee / 10 ** assetOut.assetDecimalPlaces
+                tradeEventParsedJSON.amount_out /
+                    10 ** assetOut.assetDecimalPlaces +
+                tradeEventParsedJSON.protocol_fee /
+                    10 ** assetOut.assetDecimalPlaces
 
-            this.rammPoolsVolume[ramm.poolAddress][assetIn.assetTicker] += amountIn
-            this.rammPoolsVolume[ramm.poolAddress][assetOut.assetTicker] += amountOut
+            this.rammPoolsVolume[ramm.poolAddress][assetIn.assetTicker] +=
+                amountIn
+            this.rammPoolsVolume[ramm.poolAddress][assetOut.assetTicker] +=
+                amountOut
 
             // TODO: log volumes for consumption by `capybot-monitor`, but only after cleaning
             // this code up - messy
             // ...
         } else {
             console.error(
-                `Trade failed with RAMM with ID ${ramm.poolAddress}: ` + rammTxResponse.errors
+                `Trade failed with RAMM with ID ${ramm.poolAddress}: ` +
+                    rammTxResponse.errors
             )
         }
     }
@@ -332,7 +346,10 @@ export class Capybot {
                         },
                     })
                 logger.info(
-                    { strategy: strategy, transaction_status: result.effects?.status },
+                    {
+                        strategy: strategy,
+                        transaction_status: result.effects?.status,
+                    },
                     'transaction'
                 )
 
