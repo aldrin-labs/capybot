@@ -1,22 +1,22 @@
-import { SuiClient, SuiTransactionBlockResponse } from '@mysten/sui.js/client'
-import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography/keypair'
-import { TransactionBlock } from '@mysten/sui.js/transactions'
+import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
+import { Keypair } from "@mysten/sui.js/dist/cjs/cryptography/keypair"
+import { TransactionBlock } from "@mysten/sui.js/transactions"
 
-import { setTimeout } from 'timers/promises'
-import { DataSource } from './data_sources/data_source'
-import { SuiNetworks, getFullnodeUrl } from './networks'
-import { CetusPool } from './dexs/cetus/cetus'
-import { CetusParams, RAMMSuiParams } from './dexs/dexsParams'
-import { Pool } from './dexs/pool'
-import { logger } from './logger'
-import { Strategy } from './strategies/strategy'
-import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
+import { setTimeout } from "timers/promises"
+import { DataSource } from "./data_sources/data_source"
+import { SuiNetworks, getFullnodeUrl } from "./networks"
+import { CetusPool } from "./dexs/cetus/cetus"
+import { CetusParams, RAMMSuiParams } from "./dexs/dexsParams"
+import { Pool } from "./dexs/pool"
+import { logger } from "./logger"
+import { Strategy } from "./strategies/strategy"
+import { RAMMPool } from "./dexs/ramm-sui/ramm-sui"
 import {
     RAMMSuiPool,
     TradeEvent,
     processImbRatioEvent,
     processPoolStateEvent,
-} from '@ramm/ramm-sui-sdk'
+} from "@ramm/ramm-sui-sdk"
 
 // Default gas budget: 0.1 `SUI`
 const DEFAULT_GAS_BUDGET: number = 0.1 * 10 ** 9
@@ -80,11 +80,11 @@ export class Capybot {
                         strategy.uri
                     )
                 ) {
-                    uniqueStrategies[strategy.uri] = strategy['parameters']
+                    uniqueStrategies[strategy.uri] = strategy["parameters"]
                 }
             }
         }
-        logger.info({ strategies: uniqueStrategies }, 'strategies')
+        logger.info({ strategies: uniqueStrategies }, "strategies")
 
         let transactionBlock: TransactionBlock = new TransactionBlock()
         mainloop: while (new Date().getTime() - startTime < duration) {
@@ -94,9 +94,9 @@ export class Capybot {
 
                 if (!data) {
                     console.error(
-                        'No data received from data source ' +
+                        "No data received from data source " +
                             dataSource.uri +
-                            '; skipping round.'
+                            "; skipping round."
                     )
                     continue mainloop
                 }
@@ -105,7 +105,7 @@ export class Capybot {
                     {
                         price: data,
                     },
-                    'price'
+                    "price"
                 )
 
                 // Push new data to all strategies subscribed to this data source
@@ -117,7 +117,7 @@ export class Capybot {
                     for (const order of tradeOrders) {
                         logger.info(
                             { strategy: strategy.uri, decision: order },
-                            'order'
+                            "order"
                         )
 
                         const amountIn = Math.round(order.amountIn)
@@ -213,21 +213,21 @@ export class Capybot {
         ) {
             // A tx with a single RAMM trade will emit exactly one event of this type.
             const tradeEvent = rammTxResponse.events.filter((event) =>
-                event.type.split('::')[2].startsWith('TradeEvent')
+                event.type.split("::")[2].startsWith("TradeEvent")
             )[0]
             if (tradeEvent === undefined) {
-                throw new Error('No TradeEvent found in the response')
+                throw new Error("No TradeEvent found in the response")
             }
 
             const tradeEventParsedJSON = tradeEvent.parsedJson as TradeEvent
             const assetInIndex = ramm.assetTypeIndices.get(
                 // Type names in Sui Move events are missing the leading '0x'
-                '0x' + tradeEventParsedJSON.token_in.name
+                "0x" + tradeEventParsedJSON.token_in.name
             )
             const assetIn = ramm.assetConfigs[assetInIndex!]
             const assetOutIndex = ramm.assetTypeIndices.get(
                 // Type names in Sui Move events are missing the leading '0x'
-                '0x' + tradeEventParsedJSON.token_out.name
+                "0x" + tradeEventParsedJSON.token_out.name
             )
             const assetOut = ramm.assetConfigs[assetOutIndex!]
 
@@ -292,7 +292,7 @@ export class Capybot {
                         ramm_id: poolState.rammID,
                         data: poolState.assetBalances,
                     },
-                    'ramm pool state'
+                    "ramm pool state"
                 )
 
                 logger.info(
@@ -300,7 +300,7 @@ export class Capybot {
                         ramm_id: imbRatioData.rammID,
                         data: imbRatioData.imbRatios,
                     },
-                    'imb ratios'
+                    "imb ratios"
                 )
             } catch (e) {
                 logger.error(e)
@@ -319,7 +319,7 @@ export class Capybot {
                     ramm_id: rammAddress,
                     data: this.rammPoolsVolume[rammAddress],
                 },
-                'ramm volumes'
+                "ramm volumes"
             )
         }
     }
@@ -356,7 +356,7 @@ export class Capybot {
                         strategy: strategy,
                         transaction_status: result.effects?.status,
                     },
-                    'transaction'
+                    "transaction"
                 )
 
                 return result
@@ -376,7 +376,7 @@ export class Capybot {
                 )
             ) {
                 throw new Error(
-                    'Bot does not know the dataSource with address ' +
+                    "Bot does not know the dataSource with address " +
                         dataSource
                 )
             }
@@ -393,7 +393,7 @@ export class Capybot {
             )
         ) {
             throw new Error(
-                'Data source ' + dataSource.uri + ' has already been added.'
+                "Data source " + dataSource.uri + " has already been added."
             )
         }
         this.dataSources[dataSource.uri] = dataSource
@@ -404,11 +404,11 @@ export class Capybot {
     addPool(pool: Pool<CetusParams | RAMMSuiParams>, keypair: Keypair) {
         if (Object.prototype.hasOwnProperty.call(this.pools, pool.uuid)) {
             const errMsg: string =
-                'Pool ' +
+                "Pool " +
                 pool.uri +
-                ' has already been added with asset pair: ' +
+                " has already been added with asset pair: " +
                 pool.coinA.type +
-                '/' +
+                "/" +
                 pool.coinB.type
             throw new Error(errMsg)
         }
