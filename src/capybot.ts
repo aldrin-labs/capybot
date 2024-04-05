@@ -303,7 +303,7 @@ export class Capybot {
                     "imb ratios"
                 )
             } catch (e) {
-                logger.error(e)
+                console.error("Error logging RAMM imb. ratios/pool states: " + e)
             }
         }
     }
