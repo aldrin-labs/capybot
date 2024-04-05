@@ -8,7 +8,7 @@ export abstract class Strategy {
     public readonly slippage: number
     private parameters: any
 
-    protected constructor(parameters: any, slippage: number) {
+    protected constructor(parameters: any, slippage: number = 1) {
         this.parameters = parameters
         // Generate short unique identifier for this strategy
         this.uri = Md5.hashAsciiStr(JSON.stringify(parameters))

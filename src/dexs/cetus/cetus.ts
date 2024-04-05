@@ -64,61 +64,8 @@ export class CetusPool extends Pool<CetusParams> {
             params.a2b ? this.coinA.type : this.coinB.type
         )
 
-        console.log(
-            `TotalBalance for CoinType (${params.a2b ? this.coinA.type : this.coinB.type
-            }), is: ${totalBalance} and amountIn is: ${params.amountIn}`
-        )
-
-        console.log(`cetus`)
         if (params.amountIn > 0 && Number(totalBalance) >= params.amountIn) {
             transactionBlock = await this.createCetusTransactionBlockWithSDK(transactionBlock, params)
-
-            //     console.log((txb as any))
-
-            //     const pos: number = transactionBlock.blockData.inputs.length
-            //     for (let i = 0; i < txb.blockData.transactions.length; i++) {
-            //         const tx = txb.blockData.transactions[i];
-            //         if (tx.kind == 'SplitCoins') {
-            //             const sctx = {
-            //                 kind: tx.kind,
-            //                 coin: tx.coin,
-            //                 amounts: tx.amounts
-            //             }
-
-            //             if (sctx.amounts[0].kind == 'Input') {
-            //                 sctx.amounts[0].index += pos
-            //             }
-
-            //             transactionBlock.add(sctx)
-            //         }
-
-            //         if (tx.kind == 'MoveCall') {
-            //             const mctx = {
-            //                 kind: tx.kind,
-            //                 target: tx.target,
-            //                 arguments: tx.arguments,
-            //                 typeArguments: tx.typeArguments,
-            //             }
-
-            //             for (let j = 0; j < mctx.arguments.length; j++) {
-            //                 if (mctx.arguments[j].kind == 'Input' || mctx.arguments[j].kind == 'Result') {
-            //                     (mctx.arguments[j] as any).index += pos
-            //                 }
-            //             }
-
-            //             transactionBlock.add(mctx)
-            //         }
-
-            //     }
-            //     for (let i = 0; i < txb.blockData.inputs.length; i++) {
-            //         const input = txb.blockData.inputs[i]
-            //         input.index += pos
-
-            //         //transactionBlock.add({arguments: {}})
-            //     }
-
-            //     (transactionBlock as any)
-
 
             return transactionBlock
         }
@@ -147,10 +94,6 @@ export class CetusPool extends Pool<CetusParams> {
         txb: TransactionBlock,
         params: CetusParams
     ): Promise<TransactionBlock> {
-        console.log(
-            `a2b: ${params.a2b}, amountIn: ${params.amountIn}, amountOut: ${params.amountOut}, byAmountIn: ${params.byAmountIn}, slippage: ${params.slippage}`
-        )
-
         // fix input token amount
         const coinAmount = new BN(params.amountIn)
         // input token amount is token a

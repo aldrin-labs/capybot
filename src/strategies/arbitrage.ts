@@ -80,19 +80,28 @@ export class Arbitrage extends Strategy {
                 let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
 
                 //console.log('\n\nAMOUNT IN: ' + amountIn)
-                const scaledAmountIn = amountIn * (pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                const decimals = (pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                const scaledAmountIn = Math.floor(amountIn * decimals)
                 //console.log('SCALED AMOUNT IN: ' + scaledAmountIn)
                 //console.log('ASSET IN: ' + (pool.a2b ? pool.coinA.type : pool.coinB.type))
+
+                const magMod = !pool.a2b ? 10 ** pool.coinA.decimals / 10 ** pool.coinB.decimals : 10 ** pool.coinB.decimals / 10 ** pool.coinA.decimals
+                let amountOut = latestRate * amountIn * this.slippage
+                let scaledAmountOut = Math.floor(amountOut * decimals * magMod)
+
+                console.log('in', scaledAmountIn, 'out', scaledAmountOut, 'price', latestRate)
 
                 orders.push({
                     poolUuid: pool.poolUuid,
                     assetIn: pool.a2b ? pool.coinA.type : pool.coinB.type,
                     amountIn: scaledAmountIn,
+                    amountOut: scaledAmountOut,
                     estimatedPrice: latestRate,
                     a2b: pool.a2b,
+                    slippage: this.slippage,
                 })
 
-                amountIn = amountIn * latestRate
+                amountIn = amountOut
 
                 //console.log('POST MUL AMOUNT IN: ' + amountIn + '\n\n')
             }
@@ -105,19 +114,27 @@ export class Arbitrage extends Strategy {
 
                 // recall that in this case, `pool.a2b` is false, so B is inbound
                 //console.log('\n\nREV AMOUNT IN: ' + amountIn)
-                const scaledAmountIn = amountIn * (!pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                const decimals = (!pool.a2b ? 10 ** pool.coinA.decimals : 10 ** pool.coinB.decimals)
+                const scaledAmountIn = Math.floor(amountIn * decimals)
                 //console.log('REV SCALED AMOUNT IN: ' + scaledAmountIn)
                 //console.log('REV ASSET IN: ' + (!pool.a2b ? pool.coinA.type : pool.coinB.type))
+
+                const magMod = pool.a2b ? 10 ** pool.coinA.decimals / 10 ** pool.coinB.decimals : 10 ** pool.coinB.decimals / 10 ** pool.coinA.decimals
+                let amountOut = latestRate * amountIn * this.slippage
+                let scaledAmountOut = Math.floor(amountOut * decimals * magMod)
+
+                console.log('in', scaledAmountIn, 'out', scaledAmountOut, 'price', latestRate)
 
                 orders.push({
                     poolUuid: pool.poolUuid,
                     assetIn: !pool.a2b ? pool.coinA.type : pool.coinB.type,
                     amountIn: scaledAmountIn,
+                    amountOut: scaledAmountOut,
                     estimatedPrice: latestRate,
                     a2b: !pool.a2b,
                 })
 
-                amountIn = amountIn * latestRate
+                amountIn = amountOut
 
                 //console.log('REV POST MUL AMOUNT IN: ' + amountIn + '\n\n')
             }

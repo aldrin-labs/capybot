@@ -16,10 +16,10 @@ export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 const RIDE_THE_TREND_LIMIT = 1.000005
 
 // Arbitrage threshold - 0.05%, or above
-const ARBITRAGE_RELATIVE_LIMIT = 1.0005
+const ARBITRAGE_RELATIVE_LIMIT = 1.001
 // Trades should not be bigger than 0.1 of whatever asset is being traded - scaled at the moment of
 // the trade to the asset's correct decimal places.
-const ARBITRAGE_DEFAULT_AMOUNT = 0.05
+const ARBITRAGE_DEFAULT_AMOUNT = 0.5
 
 const MARKET_DIFFERENCE_LIMIT = 1.01
 
@@ -115,7 +115,7 @@ capybot.addStrategy(
         ARBITRAGE_DEFAULT_AMOUNT,
         ARBITRAGE_RELATIVE_LIMIT,
         'Arbitrage: SUI -CETUS-> USDC -RAMM-> SUI',
-        0.98
+        0.999
     )
 )
 

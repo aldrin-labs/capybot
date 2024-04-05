@@ -1,4 +1,4 @@
-import { SuiClient } from '@mysten/sui.js/client'
+import { CoinStruct, SuiClient } from '@mysten/sui.js/client'
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography/keypair'
 import { TransactionBlock } from '@mysten/sui.js/transactions'
 
@@ -13,6 +13,7 @@ import { Strategy } from './strategies/strategy'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
 import { Int } from 'ccxt/js/src/base/types'
 import { Assets } from './coins'
+import { SuiObjectRef } from '@mysten/sui.js/dist/cjs/transactions'
 
 // Default gas budget: 0.5 `SUI`
 const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
@@ -97,6 +98,7 @@ export class Capybot {
                     'price'
                 )
 
+                await this.checkSplitTokens(2) ///TODO: change this
                 // Push new data to all strategies subscribed to this data source
                 for (const strategy of this.strategies[uri]) {
                     // Get orders for this strategy.
@@ -104,35 +106,27 @@ export class Capybot {
 
                     // Create transactions for the suggested trades
                     let txb = new TransactionBlock()
-                    let amountIn = Number(0)
+
                     for (const order of tradeOrders) {
                         logger.info(
                             { strategy: strategy.uri, decision: order },
                             'order'
                         )
-                        if (amountIn === 0) { amountIn = Math.round(order.amountIn) }
 
                         const a2b: boolean = order.a2b
                         const pool = this.pools[order.poolUuid]
-                        const magMod = !a2b ? 10 ** pool.coinA.decimals / 10 ** pool.coinB.decimals : 10 ** pool.coinB.decimals / 10 ** pool.coinA.decimals
-                        let amountOut = Math.round(
-                            order.estimatedPrice * amountIn * magMod
-                        )
-                        console.log(amountIn, amountOut, order.estimatedPrice)
+
                         const byAmountIn: boolean = true
-                        const slippage: number = 0.95 // TODO: Define this in a meaningful way. Perhaps by the strategies.
 
                         txb = await this.pools[
                             order.poolUuid
                         ].createSwapTransaction(txb, {
                             a2b,
-                            amountIn,
-                            amountOut,
+                            amountIn: order.amountIn,
+                            amountOut: order.amountOut,
                             byAmountIn,
-                            slippage,
+                            slippage: order.slippage,
                         })
-
-                        amountIn = amountOut
                     }
 
                     // Execute the transaction
@@ -214,6 +208,51 @@ export class Capybot {
             transactionBlock: txb,
             signer: sender
         });
+    }
+
+    private async checkSplitTokens(n: number) {
+        let splitTXB = new TransactionBlock()
+
+        const rs = await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: Assets.SUI.type })
+
+
+        //const coinToPay = await (await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: Assets.SUI.type })).data[0]
+        //splitTXB.setGasPayment([{ digest: coinToPay.digest, objectId: coinToPay.coinObjectId, version: coinToPay.version }]);
+
+        for (let coin of this.coinTypes) {
+            if (coin === Assets.SUI.type) {
+                continue
+            }
+            const resp = await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: coin })
+            const balance = await this.suiClient.getBalance({ owner: this.botKeypair.toSuiAddress(), coinType: coin })
+            const amt = Math.floor(Number(balance.totalBalance) / n)
+
+            resp.data.sort((a, b) => Number(b.balance) - Number(a.balance))
+
+            if (resp.data.length < n) {
+                let largest = resp.data[0]
+
+                for (let i = 0; i < n - resp.data.length; i++) {
+                    const [coin] = splitTXB.splitCoins(largest.coinObjectId, [splitTXB.pure(amt)])
+                    splitTXB.transferObjects([coin], splitTXB.pure(this.botKeypair.toSuiAddress()))
+                }
+            } else if (resp.data.length > n * 2) {
+                const toMerge = resp.data.slice(n).map((a) => a.coinObjectId)
+                splitTXB.mergeCoins(resp.data[0].coinObjectId, toMerge)
+            }
+        }
+
+        splitTXB.setGasBudget(DEFAULT_GAS_BUDGET)
+        if (splitTXB.blockData.transactions.length !== 0) {
+            await this.suiClient.signAndExecuteTransactionBlock({
+                transactionBlock: splitTXB,
+                signer: this.botKeypair
+            });
+        }
+    }
+
+    private async rebalanceTokens() {
+
     }
 
     private async executeTransactionBlock(

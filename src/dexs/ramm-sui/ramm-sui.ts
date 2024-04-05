@@ -172,9 +172,6 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         let minOut = 1
         if (params.minAmountOut) {
             minOut = params.minAmountOut
-            if (params.slippage) {
-                minOut *= params.slippage
-            }
         }
 
         this.rammSuiPool.tradeAmountIn(transactionBlock, {
@@ -183,7 +180,6 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             amountIn: newCoinObj,
             minAmountOut: minOut,
         })
-        console.log(`ramm`)
 
         return transactionBlock
     }
