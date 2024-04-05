@@ -3,7 +3,7 @@ export type argumentsType =
           kind: 'Input'
           index: number
           type?: 'object' | 'pure' | undefined
-          value?: any
+          value?: unknown
       }
     | {
           kind: 'GasCoin'

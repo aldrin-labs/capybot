@@ -45,7 +45,7 @@ export class MarketDifference extends Strategy {
             return []
         }
 
-        let price = data.price
+        const price = data.price
 
         // If it's not the pool it must be the exchange
         if (data.source_uri != this.pool.uri) {
@@ -57,7 +57,7 @@ export class MarketDifference extends Strategy {
             return []
         }
 
-        let priceRatio = this.latestExchangePrice / price
+        const priceRatio = this.latestExchangePrice / price
         this.logStatus({
             poolPrice: price,
             exchangePrice: this.latestExchangePrice,

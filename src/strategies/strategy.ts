@@ -5,9 +5,9 @@ import { logger } from '../logger'
 
 export abstract class Strategy {
     public readonly uri: string
-    private parameters: any
+    private parameters: unknown
 
-    protected constructor(parameters: any) {
+    protected constructor(parameters: unknown) {
         this.parameters = parameters
         // Generate short unique identifier for this strategy
         this.uri = Md5.hashAsciiStr(JSON.stringify(parameters))

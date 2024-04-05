@@ -87,7 +87,7 @@ export class CetusPool extends Pool<CetusParams> {
         const scaled_price =
             price * 10 ** (this.coinA.decimals - this.coinB.decimals)
 
-        let fee = pool.fee_rate * 10 ** -6
+        const fee = pool.fee_rate * 10 ** -6
 
         return {
             price: scaled_price,
@@ -112,6 +112,7 @@ export class CetusPool extends Pool<CetusParams> {
         const pool = await this.sdk.Pool.getPool(this.address)
         // Estimated amountIn amountOut fee
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const res: any = await this.sdk.Swap.preswap({
             a2b: params.a2b,
             amount: coinAmount.toString(),
