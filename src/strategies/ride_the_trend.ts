@@ -65,7 +65,7 @@ export class RideTheTrend extends Strategy {
         this.lastDecision++
 
         // Get the current price from the data point
-        let price = data.price
+        const price = data.price
 
         // Add the new data point to the history
         this.history.push(price)
@@ -80,13 +80,13 @@ export class RideTheTrend extends Strategy {
 
         // We're certain that the history has length this.long at this point
         // TODO: We can do this by streaming instead of recomputing the average every time
-        let short_average = average(
+        const short_average = average(
             this.history.slice(
                 this.history.length - this.short,
                 this.history.length
             )
         )
-        let long_average = average(this.history)
+        const long_average = average(this.history)
 
         this.logStatus({
             price: price,

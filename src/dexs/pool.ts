@@ -105,7 +105,7 @@ export abstract class Pool<
      * @returns A Promise of type DataPoint representing data about the pool.
      */
     async getData(): Promise<DataPoint> {
-        let priceAndFee = await this.estimatePriceAndFee()
+        const priceAndFee = await this.estimatePriceAndFee()
         return {
             type: DataType.Price,
             source_uri: this.uri,

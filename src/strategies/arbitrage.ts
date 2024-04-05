@@ -85,7 +85,7 @@ export class Arbitrage extends Strategy {
         let arbitrage = 1
         let arbitrageReverse = 1
         for (const pool of this.poolChain) {
-            let rate = this.getLatestRate(pool.poolUuid, pool.a2b)
+            const rate = this.getLatestRate(pool.poolUuid, pool.a2b)
             if (rate == undefined) {
                 // Not all pools have a registered value yet.
                 return []
@@ -97,10 +97,10 @@ export class Arbitrage extends Strategy {
 
         if (arbitrage > this.lowerLimit) {
             // The amount of A by trading around the chain is higher than the amount in.
-            let orders = []
+            const orders = []
 
             for (const pool of this.poolChain) {
-                let latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
+                const latestRate = this.getLatestRate(pool.poolUuid, pool.a2b)
 
                 let amountIn = pool.a2b
                     ? this.defaultAmounts[pool.coinA.type]
@@ -130,9 +130,9 @@ export class Arbitrage extends Strategy {
             return orders
         } else if (arbitrageReverse > this.lowerLimit) {
             // The amount of A by trading around the chain is lower than the amount in. Trade in the opposite direction.
-            let orders = []
+            const orders = []
             for (const pool of this.poolChain.reverse()) {
-                let latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
+                const latestRate = this.getLatestRate(pool.poolUuid, !pool.a2b)
 
                 let amountIn = !pool.a2b
                     ? this.defaultAmounts[pool.coinA.type]

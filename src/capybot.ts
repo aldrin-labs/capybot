@@ -68,12 +68,18 @@ export class Capybot {
     }
 
     async loop(duration: number, delay: number) {
-        let startTime = new Date().getTime()
+        const startTime = new Date().getTime()
 
-        let uniqueStrategies: Record<string, any> = {}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const uniqueStrategies: Record<string, any> = {}
         for (const pool in this.strategies) {
             for (const strategy of this.strategies[pool]) {
-                if (!uniqueStrategies.hasOwnProperty(strategy.uri)) {
+                if (
+                    !Object.prototype.hasOwnProperty.call(
+                        uniqueStrategies,
+                        strategy.uri
+                    )
+                ) {
                     uniqueStrategies[strategy.uri] = strategy['parameters']
                 }
             }
@@ -83,8 +89,8 @@ export class Capybot {
         let transactionBlock: TransactionBlock = new TransactionBlock()
         mainloop: while (new Date().getTime() - startTime < duration) {
             for (const uri in this.dataSources) {
-                let dataSource = this.dataSources[uri]
-                let data = await dataSource.getData()
+                const dataSource = this.dataSources[uri]
+                const data = await dataSource.getData()
 
                 if (!data) {
                     console.error(
@@ -105,7 +111,7 @@ export class Capybot {
                 // Push new data to all strategies subscribed to this data source
                 for (const strategy of this.strategies[uri]) {
                     // Get orders for this strategy.
-                    let tradeOrders = strategy.evaluate(data)
+                    const tradeOrders = strategy.evaluate(data)
 
                     // Create transactions for the suggested trades
                     for (const order of tradeOrders) {
@@ -114,8 +120,8 @@ export class Capybot {
                             'order'
                         )
 
-                        let amountIn = Math.round(order.amountIn)
-                        let amountOut = Math.round(
+                        const amountIn = Math.round(order.amountIn)
+                        const amountOut = Math.round(
                             order.estimatedPrice * amountIn
                         )
                         const a2b: boolean = order.a2b
@@ -335,7 +341,7 @@ export class Capybot {
         if (transactionBlock.blockData.transactions.length !== 0) {
             try {
                 transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
-                let result =
+                const result =
                     await this.suiClient.signAndExecuteTransactionBlock({
                         transactionBlock,
                         signer: keypair,
@@ -363,7 +369,12 @@ export class Capybot {
     /** Add a strategy to this bot. The pools it subscribes to must have been added first. */
     addStrategy(strategy: Strategy) {
         for (const dataSource of strategy.subscribes_to()) {
-            if (!this.dataSources.hasOwnProperty(dataSource)) {
+            if (
+                !Object.prototype.hasOwnProperty.call(
+                    this.dataSources,
+                    dataSource
+                )
+            ) {
                 throw new Error(
                     'Bot does not know the dataSource with address ' +
                         dataSource
@@ -375,7 +386,12 @@ export class Capybot {
 
     /** Add a new price data source for this bot to use */
     addDataSource(dataSource: DataSource) {
-        if (this.dataSources.hasOwnProperty(dataSource.uri)) {
+        if (
+            Object.prototype.hasOwnProperty.call(
+                this.dataSources,
+                dataSource.uri
+            )
+        ) {
             throw new Error(
                 'Data source ' + dataSource.uri + ' has already been added.'
             )
@@ -386,7 +402,7 @@ export class Capybot {
 
     /** Add a new pool for this bot to use for trading. */
     addPool(pool: Pool<CetusParams | RAMMSuiParams>, keypair: Keypair) {
-        if (this.pools.hasOwnProperty(pool.uuid)) {
+        if (Object.prototype.hasOwnProperty.call(this.pools, pool.uuid)) {
             const errMsg: string =
                 'Pool ' +
                 pool.uri +
@@ -403,13 +419,23 @@ export class Capybot {
             // If the pool has not already been added to the RAMM pool state/imb. ratio tracker, do
             // so.
             // Recall that that field is keyed by a RAMM's address, and not its UUID.
-            if (!this.rammPools.hasOwnProperty(pool.address)) {
+            if (
+                !Object.prototype.hasOwnProperty.call(
+                    this.rammPools,
+                    pool.address
+                )
+            ) {
                 this.rammPools[pool.address] = pool as RAMMPool
             }
 
             // If the pool doesn't already exist in the bot's RAMM volume tracker, add it.
             // Recall that that field is keyed by a RAMM's address, and not its UUID.
-            if (!this.rammPoolsVolume.hasOwnProperty(pool.address)) {
+            if (
+                !Object.prototype.hasOwnProperty.call(
+                    this.rammPoolsVolume,
+                    pool.address
+                )
+            ) {
                 const ramm = pool as RAMMPool
                 this.rammPoolsVolume[ramm.address] = {}
 

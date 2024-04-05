@@ -1,25 +1,22 @@
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519'
-import { Keypair } from '@mysten/sui.js/cryptography'
-import { SuiSupportedNetworks, rammSuiConfigs } from '@ramm/ramm-sui-sdk'
+import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519"
+import { Keypair } from "@mysten/sui.js/cryptography"
+import { SuiSupportedNetworks, rammSuiConfigs } from "@ramm/ramm-sui-sdk"
 
-import { Capybot } from './capybot'
-import { Assets } from './coins'
-import { CetusPool } from './dexs/cetus/cetus'
-import { Arbitrage } from './strategies/arbitrage'
-import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
+import { Capybot } from "./capybot"
+import { Assets } from "./coins"
+import { CetusPool } from "./dexs/cetus/cetus"
+import { Arbitrage } from "./strategies/arbitrage"
+import { RAMMPool } from "./dexs/ramm-sui/ramm-sui"
 
 // A conservative upper limit on the max gas price per transaction block in SUI
 export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 
-const RIDE_THE_TREND_LIMIT = 1.000005
+//const RIDE_THE_TREND_LIMIT = 1.000005
 
 // Arbitrage threshold - 0.05%, or above
 const ARBITRAGE_RELATIVE_LIMIT = 1.0005
-// Trades should not be bigger than 0.1 of whatever asset is being traded - scaled at the moment of
-// the trade to the asset's correct decimal places.
-const ARBITRAGE_DEFAULT_AMOUNT = 0.1
 
-const MARKET_DIFFERENCE_LIMIT = 1.01
+//const MARKET_DIFFERENCE_LIMIT = 1.01
 
 /**
  * Default amount to trade, for each token. Set to approximately 0.1 USD each.
@@ -54,22 +51,22 @@ export const poolAddresses: {
     [key in SupportedPools]: Record<string, PoolData>
 } = {
     [SupportedPools.Cetus]: {
-        'SUI/USDC': {
+        "SUI/USDC": {
             address:
-                '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
+                "0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630",
             keypair: cetusUsdcSuiKeypair,
         },
     },
     [SupportedPools.RAMM]: {
-        'SUI/USDC': {
+        "SUI/USDC": {
             address:
-                '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
+                "0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7",
             keypair: rammUsdcSuiKeypair,
         },
     },
 }
 
-let capybot = new Capybot('mainnet')
+const capybot = new Capybot("mainnet")
 
 /**
  * Cetus USDC/SUI pool
@@ -77,11 +74,11 @@ let capybot = new Capybot('mainnet')
  * Note that the order in which the assets are declared is important!
  */
 const cetusUSDCtoSUI = new CetusPool(
-    '0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630',
+    "0xcf994611fd4c48e277ce3ffd4d4364c914af2c3cbb05f7bf6facd371de688630",
     Assets.USDC,
     Assets.SUI,
     cetusUsdcSuiKeypair,
-    'mainnet'
+    "mainnet"
 )
 
 /**
@@ -91,12 +88,12 @@ const cetusUSDCtoSUI = new CetusPool(
  */
 const rammSUItoUSDC = new RAMMPool(
     rammSuiConfigs[SuiSupportedNetworks.mainnet][0],
-    '0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7',
+    "0x4ee5425220bc12f2ff633d37b1dc1eb56cc8fd96b1c72c49bd4ce6e895bd6cd7",
     Assets.SUI,
     defaultAmounts[Assets.SUI.type],
     Assets.USDC,
     rammUsdcSuiKeypair,
-    'mainnet'
+    "mainnet"
 )
 
 /* const rammSUItoUSDT = new RAMMPool(
@@ -114,8 +111,8 @@ capybot.addPool(rammSUItoUSDC, rammUsdcSuiKeypair)
 // FIXED, although the below still needs its own keypair loaded with SUI and USDT to work.
 //capybot.addPool(rammSUItoUSDT)
 
-console.log('Cetus USDC/SUI UUID: ' + cetusUSDCtoSUI.uuid)
-console.log('RAMM SUI/USDC UUID: ' + rammSUItoUSDC.uuid)
+console.log("Cetus USDC/SUI UUID: " + cetusUSDCtoSUI.uuid)
+console.log("RAMM SUI/USDC UUID: " + rammSUItoUSDC.uuid)
 
 // Add arbitrage strategy: SUI/USDC -> USDC/SUI
 capybot.addStrategy(
@@ -132,7 +129,7 @@ capybot.addStrategy(
         ],
         defaultAmounts,
         ARBITRAGE_RELATIVE_LIMIT,
-        'Arbitrage: SUI -CETUS-> USDC -RAMM-> SUI'
+        "Arbitrage: SUI -CETUS-> USDC -RAMM-> SUI"
     )
 )
 

@@ -14,8 +14,6 @@ import {
     RAMMSuiPool,
     RAMMSuiPoolConfig,
     PriceEstimationEvent,
-    PoolStateEvent,
-    ImbalanceRatioEvent,
 } from '@ramm/ramm-sui-sdk'
 import { Coin } from '../../coins'
 import { logger } from '../../logger'
