@@ -128,8 +128,10 @@ export class RideTheExternalTrend extends Strategy {
                         poolUuid: this.pool,
                         assetIn: this.coinA.type,
                         amountIn: this.defaultAmounts[0],
+                        amountOut: this.defaultAmounts[1],
                         estimatedPrice: this.latestPoolPrice,
                         a2b: true,
+                        slippage: this.slippage
                     },
                 ]
             } else if (short_average / long_average > this.limit) {
@@ -146,8 +148,10 @@ export class RideTheExternalTrend extends Strategy {
                         poolUuid: this.pool,
                         assetIn: this.coinB.type,
                         amountIn: this.defaultAmounts[1],
+                        amountOut: this.defaultAmounts[0],
                         estimatedPrice: 1 / this.latestPoolPrice,
                         a2b: false,
+                        slippage: this.slippage
                     },
                 ]
             }

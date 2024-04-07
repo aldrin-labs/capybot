@@ -34,3 +34,10 @@ export namespace Assets {
         "decimals": 8,
     }
 }
+
+export const AssetTypeToSymbol = new Map([
+    [Assets.SUI.type, Assets.SUI.symbol],
+    [Assets.USDT.type, Assets.USDT.symbol],
+    [Assets.USDC.type, Assets.USDC.symbol],
+    [Assets.WBTC.type, Assets.WBTC.symbol],
+]);

@@ -132,6 +132,7 @@ export class Arbitrage extends Strategy {
                     amountOut: scaledAmountOut,
                     estimatedPrice: latestRate,
                     a2b: !pool.a2b,
+                    slippage: this.slippage,
                 })
 
                 amountIn = amountOut

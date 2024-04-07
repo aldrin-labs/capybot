@@ -38,7 +38,7 @@ export class RideTheTrend extends Strategy {
         long: number,
         defaultAmounts: [number, number],
         limit: number,
-        name: string
+        name: string,
     ) {
         super({
             name: name,
@@ -104,8 +104,10 @@ export class RideTheTrend extends Strategy {
                         poolUuid: this.pool,
                         assetIn: this.coinA.type,
                         amountIn: this.defaultAmounts[0],
+                        amountOut: this.defaultAmounts[1],
                         estimatedPrice: price,
                         a2b: true,
+                        slippage: this.slippage,
                     },
                 ]
             } else if (short_average / long_average > this.limit) {
@@ -116,8 +118,10 @@ export class RideTheTrend extends Strategy {
                         poolUuid: this.pool,
                         assetIn: this.coinB.type,
                         amountIn: this.defaultAmounts[1],
+                        amountOut: this.defaultAmounts[1],
                         estimatedPrice: 1 / price,
                         a2b: false,
+                        slippage: this.slippage,
                     },
                 ]
             }

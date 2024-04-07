@@ -4,5 +4,6 @@ export type TradeOrder = {
     amountIn: number
     amountOut: number
     estimatedPrice: number
-    a2b: boolean
+    a2b: boolean,
+    slippage: number
 }

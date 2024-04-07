@@ -116,16 +116,17 @@ export class CetusPool extends Pool<CetusParams> {
             pool: pool,
         })
 
-        const toAmount = byAmountIn
+        /*const toAmount = byAmountIn
             ? res.estimatedAmountOut
             : res.estimatedAmountIn
+        
         // const amountLimit = adjustForSlippage(toAmount, slippage, !byAmountIn);
 
         const amountLimit = adjustForSlippage(
             new BN(toAmount),
             slippage,
             !byAmountIn
-        )
+        )*/
 
         // build swap Payload
         txb = await this.sdk.Swap.createSwapTransactionPayload(txb, {
@@ -135,7 +136,7 @@ export class CetusPool extends Pool<CetusParams> {
             a2b: params.a2b,
             by_amount_in: byAmountIn,
             amount: res.amount.toString(),
-            amount_limit: amountLimit.toString(),
+            amount_limit: params.amountOut.toString(),
         })
 
         return txb

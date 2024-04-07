@@ -70,8 +70,10 @@ export class MarketDifference extends Strategy {
                     poolUuid: this.pool.uri,
                     assetIn: this.pool.coinB.type,
                     amountIn: this.defaultAmounts[1],
+                    amountOut: this.defaultAmounts[0],
                     estimatedPrice: 1 / price,
                     a2b: false,
+                    slippage: this.slippage
                 },
             ]
         } else if ((1 - data.fee) / priceRatio > this.limit) {
@@ -81,8 +83,10 @@ export class MarketDifference extends Strategy {
                     poolUuid: this.pool.uri,
                     assetIn: this.pool.coinA.type,
                     amountIn: this.defaultAmounts[0],
+                    amountOut: this.defaultAmounts[1],
                     estimatedPrice: price,
                     a2b: true,
+                    slippage: this.slippage
                 },
             ]
         }

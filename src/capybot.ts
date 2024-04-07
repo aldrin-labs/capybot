@@ -1,4 +1,4 @@
-import { CoinStruct, SuiClient } from '@mysten/sui.js/client'
+import { CoinStruct, SuiClient, SuiTransactionBlockResponse } from '@mysten/sui.js/client'
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography/keypair'
 import { TransactionBlock } from '@mysten/sui.js/transactions'
 
@@ -12,8 +12,9 @@ import { logger } from './logger'
 import { Strategy } from './strategies/strategy'
 import { RAMMPool } from './dexs/ramm-sui/ramm-sui'
 import { Int } from 'ccxt/js/src/base/types'
-import { Assets } from './coins'
+import { AssetTypeToSymbol, Assets } from './coins'
 import { SuiObjectRef } from '@mysten/sui.js/dist/cjs/transactions'
+import { RAMMImbalanceRatioData } from '@ramm/ramm-sui-sdk'
 
 // Default gas budget: 0.5 `SUI`
 const DEFAULT_GAS_BUDGET: number = 0.5 * (10 ** 9)
@@ -55,6 +56,9 @@ export class Capybot {
     private coinTypes: Set<string>
     private maxDelta: number
 
+    private imbalance!: RAMMImbalanceRatioData
+    private lastImbalanceCheckTime!: number
+
     constructor(network: SuiNetworks, botKeypair: Keypair, maxDelta: number = 0.2) {
         this.network = network
         this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
@@ -64,8 +68,9 @@ export class Capybot {
         this.maxDelta = maxDelta
     }
 
-    async loop(duration: number, delay: number) {
+    async loop(duration: number, delay: number, maxDelay: number) {
         let startTime = new Date().getTime()
+        const baseDelay = delay
 
         let uniqueStrategies: Record<string, any> = {}
         for (const pool in this.strategies) {
@@ -79,6 +84,8 @@ export class Capybot {
 
         mainloop: while (new Date().getTime() - startTime < duration) {
             //await this.rebalance()
+            await this.checkSplitTokens(2, delay) ///TODO: change this
+            await setTimeout(delay)
             for (const uri in this.dataSources) {
                 let dataSource = this.dataSources[uri]
                 let data = await dataSource.getData()
@@ -98,7 +105,6 @@ export class Capybot {
                     'price'
                 )
 
-                await this.checkSplitTokens(2) ///TODO: change this
                 // Push new data to all strategies subscribed to this data source
                 for (const strategy of this.strategies[uri]) {
                     // Get orders for this strategy.
@@ -118,6 +124,20 @@ export class Capybot {
 
                         const byAmountIn: boolean = true
 
+                        if (pool instanceof RAMMPool) {
+                            if (!this.imbalance || this.lastImbalanceCheckTime + 1000 * 30 <= Date.now()) {
+                                this.imbalance = await pool.getImbalance()
+                                this.lastImbalanceCheckTime = Date.now()
+                            }
+                            const imb = this.imbalance.imbRatios
+                            const type = AssetTypeToSymbol.get(order.assetIn)
+
+                            if (type && imb[type] >= 1.2) {
+                                txb = new TransactionBlock()
+                                break
+                            }
+                        }
+
                         txb = await this.pools[
                             order.poolUuid
                         ].createSwapTransaction(txb, {
@@ -130,11 +150,19 @@ export class Capybot {
                     }
 
                     // Execute the transaction
-                    await this.executeTransactionBlock(
+                    const res = await this.executeTransactionBlock(
                         txb,
                         this.botKeypair,
                         strategy
                     );
+                    if (res) {
+                        if (res.errors) {
+                            delay = delay * 10
+                        } else {
+
+                        }
+                    }
+                    delay = Math.min(Math.max(delay, baseDelay), maxDelay);
                 }
             }
             await setTimeout(delay)
@@ -210,22 +238,22 @@ export class Capybot {
         });
     }
 
-    private async checkSplitTokens(n: number) {
+    private async checkSplitTokens(n: number, delay: number) {
         let splitTXB = new TransactionBlock()
 
         const rs = await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: Assets.SUI.type })
 
-
         //const coinToPay = await (await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: Assets.SUI.type })).data[0]
         //splitTXB.setGasPayment([{ digest: coinToPay.digest, objectId: coinToPay.coinObjectId, version: coinToPay.version }]);
 
+        await setTimeout(delay)
         for (let coin of this.coinTypes) {
             if (coin === Assets.SUI.type) {
                 continue
             }
             const resp = await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: coin })
             const balance = await this.suiClient.getBalance({ owner: this.botKeypair.toSuiAddress(), coinType: coin })
-            const amt = Math.floor(Number(balance.totalBalance) / n)
+            const amt = Math.floor((Number(balance.totalBalance) - Math.random() * 10 ** 3) / n)
 
             resp.data.sort((a, b) => Number(b.balance) - Number(a.balance))
 
@@ -249,17 +277,42 @@ export class Capybot {
                 signer: this.botKeypair
             });
         }
-    }
 
-    private async rebalanceTokens() {
+        if (this.coinTypes.has(Assets.SUI.type)) {
+            let gasTXB = new TransactionBlock()
+            const coin = Assets.SUI.type
 
+            const resp = await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: coin })
+
+
+            resp.data.sort((a, b) => Number(b.balance) - Number(a.balance))
+
+
+            const amts = []
+            for (let i = 0; i < n + 2 - resp.data.length; i++) {
+                const amt = Math.floor(DEFAULT_GAS_BUDGET * n * 10 + Math.random() * 10 ** 7)
+                amts.push(amt)
+            }
+
+            if (amts.length !== 0) {
+                let gasCoins = gasTXB.splitCoins(gasTXB.gas, amts)
+
+                amts.forEach((_transfer, index) => {
+                    gasTXB.transferObjects([gasCoins[index]], this.botKeypair.toSuiAddress());
+                });
+                this.suiClient.signAndExecuteTransactionBlock({
+                    transactionBlock: gasTXB,
+                    signer: this.botKeypair
+                })
+            }
+        }
     }
 
     private async executeTransactionBlock(
         transactionBlock: TransactionBlock,
         keypair: Keypair,
-        strategy: Strategy
-    ) {
+        strategy: Strategy,
+    ): Promise<SuiTransactionBlockResponse | undefined> {
         if (transactionBlock.blockData.transactions.length !== 0) {
             try {
                 transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
@@ -276,10 +329,12 @@ export class Capybot {
                     { strategy: strategy, transaction: result },
                     'transaction'
                 )
+                return result
             } catch (e) {
                 logger.error(e)
             }
         }
+        return undefined
     }
 
     /** Add a strategy to this bot. The pools it subscribes to must have been added first. */

@@ -7,7 +7,7 @@ import { SuiNetworks } from '../../networks'
 import { RAMMSuiParams } from '../dexsParams'
 import { Pool } from '../pool'
 
-import { RAMMSuiPool, RAMMSuiPoolConfig, PriceEstimationEvent } from '@ramm/ramm-sui-sdk'
+import { RAMMSuiPool, RAMMSuiPoolConfig, PriceEstimationEvent, processImbRatioEvent, RAMMImbalanceRatioData } from '@ramm/ramm-sui-sdk'
 import { Coin } from '../../coins'
 import { logger } from '../../logger'
 
@@ -238,5 +238,27 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             fee:
                 priceEstimationEventJSON.protocol_fee / amountIn,
         }
+    }
+
+    async getImbalance(): Promise<RAMMImbalanceRatioData> {
+        const { poolStateEventJSON, imbRatioEventJSON } =
+            await this.rammSuiPool.getPoolStateAndImbalanceRatios(
+                this.suiClient,
+                this.senderAddress
+            )
+        const imbRatioData = processImbRatioEvent(
+            this.rammSuiPool,
+            imbRatioEventJSON
+        )
+
+        // logger.info(
+        //     {
+        //         ramm_id: imbRatioData.rammID,
+        //         data: imbRatioData.imbRatios,
+        //     },
+        //     "imb ratios"
+        // )
+
+        return imbRatioData
     }
 }
