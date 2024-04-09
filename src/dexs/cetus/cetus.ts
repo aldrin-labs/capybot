@@ -1,29 +1,30 @@
+/* eslint-disable indent */
 import SDK, {
     Percentage,
     SdkOptions,
     adjustForSlippage,
     d,
-} from '@cetusprotocol/cetus-sui-clmm-sdk/dist'
+} from "@cetusprotocol/cetus-sui-clmm-sdk/dist"
 
-import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
-import { Keypair } from '@mysten/sui.js/cryptography'
-import { TransactionBlock } from '@mysten/sui.js/transactions'
+import { SuiClient, getFullnodeUrl } from "@mysten/sui.js/client"
+import { Keypair } from "@mysten/sui.js/cryptography"
+import { TransactionBlock } from "@mysten/sui.js/transactions"
 
-import { SuiNetworks } from '../../networks'
+import { SuiNetworks } from "../../networks"
 
-import BN from 'bn.js'
-import { getTotalBalanceByCoinType } from '../../utils/utils'
-import { CetusParams } from '../dexsParams'
-import { Pool } from '../pool'
-import { clmmMainnet } from './mainnet_config'
-import { Coin } from '../../coins'
+import BN from "bn.js"
+import { getTotalBalanceByCoinType } from "../../utils/utils"
+import { CetusParams } from "../dexsParams"
+import { Pool } from "../pool"
+import { clmmMainnet } from "./mainnet_config"
+import { Coin } from "../../coins"
 
 function buildSdkOptions(network: SuiNetworks): SdkOptions {
-    switch (network) {
-        case 'mainnet':
+    switch (network) {        
+        case "mainnet":
             return clmmMainnet
-        case 'testnet':
-            throw new Error('Testnet not yet supported')
+        case "testnet":
+            throw new Error("Testnet not yet supported")
     }
 }
 

@@ -1,4 +1,4 @@
-import { DataPoint } from './data_point'
+import { DataPoint } from "./data_point"
 
 /** A DataSource provides real-time price data for a pair of coins. This could be a trading pool or an exchange. */
 export abstract class DataSource {
