@@ -1,11 +1,11 @@
-import { TransactionBlock } from '@mysten/sui.js/transactions'
+import { TransactionBlock } from "@mysten/sui.js/transactions"
 
-import { Coin } from '../coins'
-import { DataPoint, DataType } from '../data_sources/data_point'
-import { DataSource } from '../data_sources/data_source'
-import { CetusParams, RAMMSuiParams, TurbosParams } from './dexsParams'
+import { Coin } from "../coins"
+import { DataPoint, DataType } from "../data_sources/data_point"
+import { DataSource } from "../data_sources/data_source"
+import { CetusParams, RAMMSuiParams, TurbosParams } from "./dexsParams"
 
-import { v5 as uuidv5 } from 'uuid'
+import { v5 as uuidv5 } from "uuid"
 
 export type PreswapResult = {
     estimatedAmountIn: number
@@ -35,7 +35,7 @@ export abstract class Pool<
      * Generated from https://www.uuidgenerator.net/.
      */
     public static readonly POOL_UUID_NAMESPACE =
-        '8b05a61f-0c4c-428c-9a91-8955d8119419'
+        "8b05a61f-0c4c-428c-9a91-8955d8119419"
 
     /**
      * Sui address of the pool.

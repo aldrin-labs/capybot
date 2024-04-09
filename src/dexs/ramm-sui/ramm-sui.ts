@@ -1,22 +1,22 @@
-import { CoinStruct, SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
-import { Keypair } from '@mysten/sui.js/cryptography'
+import { CoinStruct, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client"
+import { Keypair } from "@mysten/sui.js/cryptography"
 import {
     TransactionBlock,
     TransactionObjectArgument,
-} from '@mysten/sui.js/transactions'
+} from "@mysten/sui.js/transactions"
 
-import { SuiNetworks } from '../../networks'
+import { SuiNetworks } from "../../networks"
 
-import { RAMMSuiParams } from '../dexsParams'
-import { Pool } from '../pool'
+import { RAMMSuiParams } from "../dexsParams"
+import { Pool } from "../pool"
 
 import {
     RAMMSuiPool,
     RAMMSuiPoolConfig,
     PriceEstimationEvent,
-} from '@ramm/ramm-sui-sdk'
-import { Coin } from '../../coins'
-import { logger } from '../../logger'
+} from "@ramm/ramm-sui-sdk"
+import { Coin } from "../../coins"
+import { logger } from "../../logger"
 
 export class RAMMPool extends Pool<RAMMSuiParams> {
     public rammSuiPool: RAMMSuiPool
@@ -31,9 +31,9 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
      * In order to know whether the payment is in SUI, the asset type must be compared to these
      * values.
      */
-    private static readonly SUI_ADDRESS_SHORT: string = '0x2::SUI::sui'
+    private static readonly SUI_ADDRESS_SHORT: string = "0x2::SUI::sui"
     private static readonly SUI_ADDRESS_LONG: string =
-        '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'
+        "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
 
     public senderAddress: string
     // Required to estimate the price of a trade
@@ -177,7 +177,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         params: RAMMSuiParams
     ): Promise<TransactionBlock> {
         if (params.amountIn === 0) {
-            throw new Error('AmountIn or amountOut must be non-zero')
+            throw new Error("AmountIn or amountOut must be non-zero")
         }
 
         const { assetIn, assetOut } = params.a2b
@@ -234,12 +234,12 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             !devInspectRes.events ||
             devInspectRes.events.length === 0
         ) {
-            logger.error('No events found in the transaction block')
+            logger.error("No events found in the transaction block")
         }
 
         if (devInspectRes.error) {
             throw new Error(
-                'Price estimation devInpect failed with: ' + devInspectRes.error
+                "Price estimation devInpect failed with: " + devInspectRes.error
             )
         }
 
