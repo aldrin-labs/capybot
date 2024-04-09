@@ -372,13 +372,9 @@ export class Capybot {
                         // This error code corresponds to "Transaction execution failed due to issues with transaction inputs",
                         // more specifically: the gas coin used by the PTB has insufficient balance for the budget set.
                         throw e
-                    } else {
-                        console.error(
-                            "Error signing/executing transaction block: " + e.message
-                        )
                     }
                 } else {
-                    console.error(e)
+                    "Error signing/executing transaction block: " + e
                 }
             }
         }
