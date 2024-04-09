@@ -67,7 +67,16 @@ export class Capybot {
         this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
     }
 
-    async loop(duration: number, delay: number) {
+    /**
+     * The main loop of the bot.
+     *
+     * It will run for `duration` milliseconds, with at least `delay` milliseconds between each
+     * iteration.
+     *
+     * @param duration How long the bot should run for, in milliseconds.
+     * @param delay The (minimum) delay between each iteration of the bot, in milliseconds.
+     */
+    async innerLoop(duration: number, delay: number) {
         const startTime = new Date().getTime()
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
