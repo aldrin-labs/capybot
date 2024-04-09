@@ -1,4 +1,4 @@
-import { JsonRpcError, SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
+import { JsonRpcError, SuiClient, SuiHTTPStatusError, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
 import { Keypair } from "@mysten/sui.js/dist/cjs/cryptography/keypair"
 import { TransactionBlock } from "@mysten/sui.js/transactions"
 
@@ -73,12 +73,13 @@ export class Capybot {
      * It will run for `duration` milliseconds, with at least `delay` milliseconds between each
      * iteration.
      *
+     * @param startTime The time at which the bot began running, in milliseconds.
      * @param duration How long the bot should run for, in milliseconds.
      * @param delay The (minimum) delay between each iteration of the bot, in milliseconds.
+     * @param retries The number of times the bot should retry running this loop in case of a
+     *        recoverable error.
      */
-    async innerLoop(duration: number, delay: number) {
-        const startTime = new Date().getTime()
-
+    async innerLoop(startTime: number, duration: number, delay: number) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const uniqueStrategies: Record<string, any> = {}
         for (const pool in this.strategies) {
@@ -201,6 +202,51 @@ export class Capybot {
              */
 
             await setTimeout(delay)
+        }
+    }
+
+    async outerLoop(duration: number, delay: number, retries = 10) {
+        let startTime = new Date().getTime()
+
+        while (retries > 0) {
+            try {
+                await this.innerLoop(startTime, duration, delay)
+            } catch (e) {
+                if (e instanceof JsonRpcError) {
+                    if (e.code === -32002) {
+                        // This error code corresponds to "Transaction execution failed due to issues with transaction inputs",
+                        // more specifically: the gas coin used by the PTB has insufficient balance for the budget set.
+                        // Rethrow, no point in retrying.
+                        throw e
+                    }
+                    // Depending on what other kinds of `JsonRpcError`s can be thrown, more `else` branches
+                    // may be needed here.
+                } else if (e instanceof SuiHTTPStatusError) {
+                    console.error("Sui HTTP Status Error!")
+                }
+
+                console.error("Error in the inner loop: " + e)
+                console.error("Retrying...")
+
+                startTime = new Date().getTime()
+                /**
+                 * Reset all clients - not just `Capybot.suiClient` - and try again.
+                 */
+                this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
+                for (const pool of Object.values(this.pools)) {
+                    if (pool instanceof CetusPool) {
+                        const cPool = pool as CetusPool
+                        cPool.resetSuiClient()
+                    } else if (pool instanceof RAMMPool) {
+                        const rPool = pool as RAMMPool
+                        rPool.resetSuiClient()
+                    }
+                }
+
+                retries -= 1
+
+                await this.innerLoop(startTime, duration, delay)
+            }
         }
     }
 
