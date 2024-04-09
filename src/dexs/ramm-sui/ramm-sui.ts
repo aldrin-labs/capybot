@@ -214,7 +214,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
     async estimatePriceAndFee(): Promise<{
         price: number
         fee: number
-    }> {
+    } | null> {
         const amountIn = this.defaultAmountCoinA * 10 ** this.coinA.decimals
 
         const estimate_txb: TransactionBlock =
@@ -234,13 +234,11 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             !devInspectRes.events ||
             devInspectRes.events.length === 0
         ) {
-            logger.error("No events found in the transaction block")
+            return null
         }
 
         if (devInspectRes.error) {
-            throw new Error(
-                "Price estimation devInpect failed with: " + devInspectRes.error
-            )
+            return null
         }
 
         // Price estimation, if successful, only returns one event, so this indexation is safe.

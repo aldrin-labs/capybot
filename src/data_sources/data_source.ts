@@ -9,5 +9,5 @@ export abstract class DataSource {
     }
 
     /** Get the latest price information from this data source. The price indicates the number of coinTypeB's you can get for 1 coinTypeA. */
-    abstract getData(): Promise<DataPoint>
+    abstract getData(): Promise<DataPoint | null>
 }

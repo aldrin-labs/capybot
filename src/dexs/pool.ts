@@ -97,22 +97,29 @@ export abstract class Pool<
     abstract estimatePriceAndFee(): Promise<{
         price: number
         fee: number
-    }>
+    } | null>
 
     /**
      * Method for getting data about the pool.
      *
      * @returns A Promise of type DataPoint representing data about the pool.
+     *          If, for whatever reason (e.g. RPC failure, pool object is locked, network failures)
+     *          the request cannot be satisfied, the method returns `null`.
      */
-    async getData(): Promise<DataPoint> {
+    async getData(): Promise<DataPoint | null> {
         const priceAndFee = await this.estimatePriceAndFee()
-        return {
-            type: DataType.Price,
-            source_uri: this.uri,
-            coinTypeFrom: this.coinA.type,
-            coinTypeTo: this.coinB.type,
-            price: priceAndFee.price,
-            fee: priceAndFee.fee,
+
+        if (priceAndFee) {
+            return {
+                type: DataType.Price,
+                source_uri: this.uri,
+                coinTypeFrom: this.coinA.type,
+                coinTypeTo: this.coinB.type,
+                price: priceAndFee.price,
+                fee: priceAndFee.fee,
+            }
         }
+
+        return null
     }
 }
