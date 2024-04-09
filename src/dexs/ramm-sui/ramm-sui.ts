@@ -21,6 +21,7 @@ import { logger } from "../../logger"
 export class RAMMPool extends Pool<RAMMSuiParams> {
     public rammSuiPool: RAMMSuiPool
     public suiClient: SuiClient
+    public network: SuiNetworks
 
     /**
      * The SUI address of the SUI token, in short and long form.
@@ -54,7 +55,15 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         this.rammSuiPool = new RAMMSuiPool(rammConfig)
         this.senderAddress = keypair.getPublicKey().toSuiAddress()
 
-        this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
+        this.network = network
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
+    }
+
+    /**
+     * Reset the Sui client of this instance of `RAMMPool`.
+     */
+    public resetSuiClient() {
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
     }
 
     /**

@@ -49,6 +49,13 @@ export class CetusPool extends Pool<CetusParams> {
     }
 
     /**
+     * Reset the Sui client of this instance of `CetusPool`.
+     */
+    public resetSuiClient() {
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
+    }
+
+    /**
      * Create swap transaction
      * @param transactionBlock Transaction block
      * @param params Cetus parameters

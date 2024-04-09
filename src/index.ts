@@ -13,8 +13,8 @@ export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 
 //const RIDE_THE_TREND_LIMIT = 1.000005
 
-// Arbitrage threshold - 0.05%, or above
-const ARBITRAGE_RELATIVE_LIMIT = 1.0005
+// Arbitrage threshold - 0.1%, or above
+const ARBITRAGE_RELATIVE_LIMIT = 1.001
 
 //const MARKET_DIFFERENCE_LIMIT = 1.01
 
