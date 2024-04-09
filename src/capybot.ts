@@ -1,4 +1,4 @@
-import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
+import { JsonRpcError, SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
 import { Keypair } from "@mysten/sui.js/dist/cjs/cryptography/keypair"
 import { TransactionBlock } from "@mysten/sui.js/transactions"
 
@@ -247,9 +247,6 @@ export class Capybot {
             this.rammPoolsVolume[ramm.poolAddress][assetOut.assetTicker] +=
                 amountOut
 
-            // TODO: log volumes for consumption by `capybot-monitor`, but only after cleaning
-            // this code up - messy
-            // ...
         } else {
             console.error(
                 `Trade failed with RAMM with ID ${ramm.poolAddress}: ` +
@@ -361,7 +358,19 @@ export class Capybot {
 
                 return result
             } catch (e) {
-                console.error(e)
+                if (e instanceof JsonRpcError) {
+                    if (e.code === -32002) {
+                        // This error code corresponds to "Transaction execution failed due to issues with transaction inputs",
+                        // more specifically: the gas coin used by the PTB has insufficient balance for the budget set.
+                        throw e
+                    } else {
+                        console.error(
+                            "Error signing/executing transaction block: " + e.message
+                        )
+                    }
+                } else {
+                    console.error(e)
+                }
             }
         }
     }
