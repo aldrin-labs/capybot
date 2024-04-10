@@ -205,13 +205,35 @@ export class Capybot {
         }
     }
 
+    /**
+     * Execute the bot's main loop for a given duration, with a given delay between each iteration.
+     *
+     * If a recoverable exception is thrown (e.g. the server closes its connection, or resets it),
+     * the bot will attempt to recover by resetting all Sui clients and retrying the loop.
+     *
+     * It will not retry if the error is due to a lack of gas for fees.
+     *
+     * It will also not retry more than a set number of times.
+     *
+     * @param duration The duration for which the bot should run, in milliseconds.
+     * @param delay The delay between each iteration of the bot, in milliseconds.
+     * @param retries The maximum number of times the bot should retry running this loop in case
+     *        of a recoverable error. Defaults to 10 if not provided.
+     */
     async outerLoop(duration: number, delay: number, retries = 10) {
-        let startTime = new Date().getTime()
+        // The bot's start time is only recorded once, at the beginning of the outer loop.
+        // This way, if the inner loop must be rerun, the bot's start time is not reset.
+        const startTime = new Date().getTime()
 
         while (retries > 0) {
             try {
                 await this.innerLoop(startTime, duration, delay)
+                // Notice what is happening here:
+                // If the inner loop can run sucessfully all the way to completion, no further
+                // retries need be made.
+                break
             } catch (e) {
+                // If the error occurred over a lack of gas for fees, do not recover.
                 if (e instanceof JsonRpcError) {
                     if (e.code === -32002) {
                         // This error code corresponds to "Transaction execution failed due to issues with transaction inputs",
@@ -221,16 +243,19 @@ export class Capybot {
                     }
                     // Depending on what other kinds of `JsonRpcError`s can be thrown, more `else` branches
                     // may be needed here.
+                // Server errors - `ECONNRESET`, etc
+                // Log, and attempt to recover.
                 } else if (e instanceof SuiHTTPStatusError) {
-                    console.error("Sui HTTP Status Error!")
+                    console.error("Sui HTTP Status Error! Error: " + e)
+                } else {
+                    console.error("Error in the inner loop: " + e)
                 }
-
-                console.error("Error in the inner loop: " + e)
                 console.error("Retrying...")
 
-                startTime = new Date().getTime()
                 /**
-                 * Reset all clients - not just `Capybot.suiClient` - and try again.
+                 * Reset all Sui clients - not just `Capybot.suiClient` - and try again.
+                 * Reasoning: the error could have been caused by a network issue, such as the server
+                 * unilaterally closing the connection, or an involuntary reset of the connection.
                  */
                 this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
                 for (const pool of Object.values(this.pools)) {
@@ -243,9 +268,9 @@ export class Capybot {
                     }
                 }
 
+                // After this instruction is executed, the `catch` block is exited from, and
+                // the loop can restart, should there be tries left.
                 retries -= 1
-
-                await this.innerLoop(startTime, duration, delay)
             }
         }
     }
