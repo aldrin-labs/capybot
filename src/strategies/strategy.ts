@@ -14,9 +14,19 @@ export abstract class Strategy {
     }
 
     /**
-     * Outcome of evaluation. Amount should be in the range [-1, 1] and should be scaled to the right amount of tokens
-     * by the caller. The a2b parameter indicates whether we should swap coin A for coin B or vice verse. A return value
-     * equal to null means that no trade should done.
+     * Outcome of evaluation.
+     *
+     * Given a data point, the strategy evaluates it and returns a list of trade orders to be
+     * executed contigent on that datum.
+     *
+     * After some refactorings, the `Arbitrage` strategy - the only one that is relevant at the
+     * moment - already scales each trade order's amount to the asset's correct decimal places.
+     *
+     * All other strategies are not up tp date, and should be used with care.
+     *
+     *The a2b parameter indicates whether coin A should be swapped for coin B, or vice-versa.
+     *
+     * Return values of null or an empty list mean that no trade should done.
      *
      * @param data The data to evaluate.
      */
@@ -38,7 +48,7 @@ export abstract class Strategy {
                 uri: this.uri,
                 data: status,
             },
-            'strategy status'
+            "strategy status"
         )
     }
 }
