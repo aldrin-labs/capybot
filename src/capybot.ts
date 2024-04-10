@@ -297,8 +297,12 @@ export class Capybot {
             const tradeEvent = rammTxResponse.events.filter((event) =>
                 event.type.split("::")[2].startsWith("TradeEvent")
             )[0]
+            // No trading event found in the response - perhaps the transaction failed, or the
+            // full node that replied did not yet receive its confirmation.
+            // Skip.
             if (tradeEvent === undefined) {
-                throw new Error("No TradeEvent found in the response")
+                console.error("No TradeEvent found in RAMM trade response!")
+                return
             }
 
             const tradeEventParsedJSON = tradeEvent.parsedJson as TradeEvent
