@@ -406,6 +406,10 @@ export class Capybot {
 
     /**
      * Signs and executes a transaction block, if it has any transactions in it.
+     *
+     * `SuiClient.signAndExecuteTransactionBlock` may raise exceptions, which are not caught here.
+     * They are the responsibility of the caller, which at the moment will, transitively, be
+     * `Capybot.outerLoop`.
      * @param transactionBlock
      * @param keypair
      * @param strategy
@@ -419,38 +423,26 @@ export class Capybot {
         showEvents: boolean = false
     ): Promise<SuiTransactionBlockResponse | undefined> {
         if (transactionBlock.blockData.transactions.length !== 0) {
-            try {
-                transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
-                const result =
-                    await this.suiClient.signAndExecuteTransactionBlock({
-                        transactionBlock,
-                        signer: keypair,
-                        options: {
-                            showObjectChanges: true,
-                            showEffects: true,
-                            showEvents,
-                        },
-                    })
-                logger.info(
-                    {
-                        strategy: strategy,
-                        transaction_status: result.effects?.status,
+            transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
+            const result =
+                await this.suiClient.signAndExecuteTransactionBlock({
+                    transactionBlock,
+                    signer: keypair,
+                    options: {
+                        showObjectChanges: true,
+                        showEffects: true,
+                        showEvents,
                     },
-                    "transaction"
-                )
+                })
+            logger.info(
+                {
+                    strategy: strategy,
+                    transaction_status: result.effects?.status,
+                },
+                "transaction"
+            )
 
-                return result
-            } catch (e) {
-                if (e instanceof JsonRpcError) {
-                    if (e.code === -32002) {
-                        // This error code corresponds to "Transaction execution failed due to issues with transaction inputs",
-                        // more specifically: the gas coin used by the PTB has insufficient balance for the budget set.
-                        throw e
-                    }
-                } else {
-                    "Error signing/executing transaction block: " + e
-                }
-            }
+            return result
         }
     }
 
