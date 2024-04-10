@@ -243,8 +243,8 @@ export class Capybot {
                     }
                     // Depending on what other kinds of `JsonRpcError`s can be thrown, more `else` branches
                     // may be needed here.
-                // Server errors - `ECONNRESET`, etc
-                // Log, and attempt to recover.
+                    // Server errors - `ECONNRESET`, etc
+                    // Log, and attempt to recover.
                 } else if (e instanceof SuiHTTPStatusError) {
                     console.error("Sui HTTP Status Error! Error: " + e)
                 } else {
@@ -257,7 +257,9 @@ export class Capybot {
                  * Reasoning: the error could have been caused by a network issue, such as the server
                  * unilaterally closing the connection, or an involuntary reset of the connection.
                  */
-                this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
+                this.suiClient = new SuiClient({
+                    url: getFullnodeUrl(this.network),
+                })
                 for (const pool of Object.values(this.pools)) {
                     if (pool instanceof CetusPool) {
                         const cPool = pool as CetusPool
@@ -326,7 +328,6 @@ export class Capybot {
                 amountIn
             this.rammPoolsVolume[ramm.poolAddress][assetOut.assetTicker] +=
                 amountOut
-
         } else {
             console.error(
                 `Trade failed with RAMM with ID ${ramm.poolAddress}: ` +
@@ -380,7 +381,9 @@ export class Capybot {
                     "imb ratios"
                 )
             } catch (e) {
-                console.error("Error logging RAMM imb. ratios/pool states: " + e)
+                console.error(
+                    "Error logging RAMM imb. ratios/pool states: " + e
+                )
             }
         }
     }
