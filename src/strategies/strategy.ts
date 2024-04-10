@@ -1,7 +1,7 @@
-import { DataPoint } from '../data_sources/data_point'
-import { TradeOrder } from './order'
-import { Md5 } from 'ts-md5'
-import { logger } from '../logger'
+import { DataPoint } from "../data_sources/data_point"
+import { TradeOrder } from "./order"
+import { Md5 } from "ts-md5"
+import { logger } from "../logger"
 
 export abstract class Strategy {
     public readonly uri: string
