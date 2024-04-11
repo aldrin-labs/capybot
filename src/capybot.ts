@@ -246,7 +246,6 @@ export class Capybot {
         //const coinToPay = await (await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: Assets.SUI.type })).data[0]
         //splitTXB.setGasPayment([{ digest: coinToPay.digest, objectId: coinToPay.coinObjectId, version: coinToPay.version }]);
 
-        await setTimeout(delay)
         for (let coin of this.coinTypes) {
             if (coin === Assets.SUI.type) {
                 continue
@@ -256,16 +255,16 @@ export class Capybot {
             const amt = Math.floor((Number(balance.totalBalance) - Math.random() * 10 ** 3) / n)
 
             resp.data.sort((a, b) => Number(b.balance) - Number(a.balance))
-
             if (resp.data.length < n) {
+                console.log("splitting coins", coin, n - resp.data.length)
                 let largest = resp.data[0]
 
                 for (let i = 0; i < n - resp.data.length; i++) {
                     const [coin] = splitTXB.splitCoins(largest.coinObjectId, [splitTXB.pure(amt)])
                     splitTXB.transferObjects([coin], splitTXB.pure(this.botKeypair.toSuiAddress()))
                 }
-            } else if (resp.data.length > n * 2) {
-                const toMerge = resp.data.slice(n).map((a) => a.coinObjectId)
+            } else if (resp.data.length > n * 3) {
+                const toMerge = resp.data.slice(n + 1).map((a) => a.coinObjectId)
                 splitTXB.mergeCoins(resp.data[0].coinObjectId, toMerge)
             }
         }
@@ -278,23 +277,23 @@ export class Capybot {
             });
         }
 
+        await setTimeout(delay)
         if (this.coinTypes.has(Assets.SUI.type)) {
             let gasTXB = new TransactionBlock()
             const coin = Assets.SUI.type
 
             const resp = await this.suiClient.getCoins({ owner: this.botKeypair.toSuiAddress(), coinType: coin })
 
-
             resp.data.sort((a, b) => Number(b.balance) - Number(a.balance))
 
-
             const amts = []
-            for (let i = 0; i < n + 2 - resp.data.length; i++) {
+            for (let i = 0; i < (n + 1 - resp.data.length) * 2; i++) {
                 const amt = Math.floor(DEFAULT_GAS_BUDGET * n * 10 + Math.random() * 10 ** 7)
                 amts.push(amt)
             }
 
             if (amts.length !== 0) {
+                console.log("splitting gas", coin, n + 2 - resp.data.length)
                 let gasCoins = gasTXB.splitCoins(gasTXB.gas, amts)
 
                 amts.forEach((_transfer, index) => {
