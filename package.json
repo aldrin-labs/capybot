@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "description": "Arbitrage Bot",
     "scripts": {
-        "format": "npx prettier . --ignore-path .gitignore",
+        "format": "npx prettier src/**/*.ts --ignore-path .gitignore",
         "lint": "npx eslint --ignore-path .gitignore --ext .js,.ts",
         "build": "yarn rimraf dist && tsc",
         "start": "node dist/index.js"
