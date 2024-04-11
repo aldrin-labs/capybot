@@ -1,4 +1,3 @@
-/* eslint-disable indent */
 import SDK, {
     Percentage,
     SdkOptions,
@@ -20,7 +19,7 @@ import { clmmMainnet } from "./mainnet_config"
 import { Coin } from "../../coins"
 
 function buildSdkOptions(network: SuiNetworks): SdkOptions {
-    switch (network) {        
+    switch (network) {
         case "mainnet":
             return clmmMainnet
         case "testnet":
