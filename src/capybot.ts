@@ -1,4 +1,9 @@
-import { JsonRpcError, SuiClient, SuiHTTPStatusError, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
+import {
+    JsonRpcError,
+    SuiClient,
+    SuiHTTPStatusError,
+    SuiTransactionBlockResponse,
+} from "@mysten/sui.js/client"
 import { Keypair } from "@mysten/sui.js/dist/cjs/cryptography/keypair"
 import { TransactionBlock } from "@mysten/sui.js/transactions"
 
@@ -428,16 +433,15 @@ export class Capybot {
     ): Promise<SuiTransactionBlockResponse | undefined> {
         if (transactionBlock.blockData.transactions.length !== 0) {
             transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
-            const result =
-                await this.suiClient.signAndExecuteTransactionBlock({
-                    transactionBlock,
-                    signer: keypair,
-                    options: {
-                        showObjectChanges: true,
-                        showEffects: true,
-                        showEvents,
-                    },
-                })
+            const result = await this.suiClient.signAndExecuteTransactionBlock({
+                transactionBlock,
+                signer: keypair,
+                options: {
+                    showObjectChanges: true,
+                    showEffects: true,
+                    showEvents,
+                },
+            })
             logger.info(
                 {
                     strategy: strategy,
