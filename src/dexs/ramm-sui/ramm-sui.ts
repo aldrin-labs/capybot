@@ -226,8 +226,10 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
     } | null> {
         const amountIn = this.defaultAmountCoinA * 10 ** this.coinA.decimals
 
-        const estimate_txb: TransactionBlock =
-            this.rammSuiPool.estimatePriceWithAmountIn({
+        const estimate_txb: TransactionBlock = new TransactionBlock()
+        this.rammSuiPool.estimatePriceWithAmountIn(
+            estimate_txb,
+            {
                 assetIn: this.coinA.type,
                 assetOut: this.coinB.type,
                 amountIn,
