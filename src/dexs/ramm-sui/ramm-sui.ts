@@ -37,8 +37,10 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
 
     public senderAddress: string
-    // Required to estimate the price of a trade
+    // The below are required to estimate the price of a trade - in case one direction of the
+    // price estimate fails, the other 
     public defaultAmountCoinA: number
+    public defaultAmountCoinB: number
 
     constructor(
         rammConfig: RAMMSuiPoolConfig,
@@ -46,11 +48,13 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         coinA: Coin,
         defaultAmountCoinA: number,
         coinB: Coin,
+        defaultAmountCoinB: number,
         keypair: Keypair,
         network: SuiNetworks
     ) {
         super(address, coinA, coinB)
         this.defaultAmountCoinA = defaultAmountCoinA
+        this.defaultAmountCoinB = defaultAmountCoinB
 
         this.rammSuiPool = new RAMMSuiPool(rammConfig)
         this.senderAddress = keypair.getPublicKey().toSuiAddress()
@@ -224,15 +228,25 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         price: number
         fee: number
     } | null> {
-        const amountIn = this.defaultAmountCoinA * 10 ** this.coinA.decimals
+        const amountInA = this.defaultAmountCoinA * 10 ** this.coinA.decimals
+        const amountInB = this.defaultAmountCoinB * 10 ** this.coinB.decimals
 
         const estimate_txb: TransactionBlock = new TransactionBlock()
+
         this.rammSuiPool.estimatePriceWithAmountIn(
             estimate_txb,
             {
                 assetIn: this.coinA.type,
                 assetOut: this.coinB.type,
-                amountIn,
+                amountIn: amountInA,
+            })
+
+        this.rammSuiPool.estimatePriceWithAmountIn(
+            estimate_txb,
+            {
+                assetIn: this.coinB.type,
+                assetOut: this.coinA.type,
+                amountIn: amountInB,
             })
 
         const devInspectRes = await this.suiClient.devInspectTransactionBlock({
@@ -240,17 +254,32 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             transactionBlock: estimate_txb,
         })
 
+        // If:
+        // * the tx response is `null`, or
+        // * it isn't, but it has no `events` field in it, or
+        // * it does, but for some reason, the events array is empty
+        // then don't return any price information, which will cause the strategy to skip that
+        // round.
         if (
             !devInspectRes ||
             !devInspectRes.events ||
-            devInspectRes.events.length === 0
+            devInspectRes.events.length < 1
         ) {
             return null
         }
 
+        // If the transaction errored, don't return anything either.
         if (devInspectRes.error) {
             return null
         }
+
+        const eventsJson = devInspectRes.events.map((event) => event.parsedJson as PriceEstimationEvent)
+
+        eventsJson.filter(
+            (event) => {
+                event.
+            }
+        )[0]
 
         // Price estimation, if successful, only returns one event, so this indexation is safe.
         const priceEstimationEventJSON = devInspectRes.events[0]
