@@ -37,8 +37,10 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
 
     public senderAddress: string
-    // The below are required to estimate the price of a trade - in case one direction of the
-    // price estimate fails, the other 
+    // The below are required to estimate the price of a trade.
+    // In case one direction of the price estimate fails due to that asset being close to the
+    // RAMM's `ONE +/- DELTA` threshold, the other asset's default amount is used to perform an
+    // estimate in the opposite direction, which is guaranteed to work.
     public defaultAmountCoinA: number
     public defaultAmountCoinB: number
 
@@ -231,8 +233,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         const amountInA = this.defaultAmountCoinA * 10 ** this.coinA.decimals
         const amountInB = this.defaultAmountCoinB * 10 ** this.coinB.decimals
 
-        const estimate_txb: TransactionBlock = new TransactionBlock()
-
+        let estimate_txb: TransactionBlock = new TransactionBlock()
         this.rammSuiPool.estimatePriceWithAmountIn(
             estimate_txb,
             {
@@ -240,60 +241,71 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
                 assetOut: this.coinB.type,
                 amountIn: amountInA,
             })
+        let devInspectRes = await this.suiClient.devInspectTransactionBlock({
+            sender: this.senderAddress,
+            transactionBlock: estimate_txb,
+        })
 
-        this.rammSuiPool.estimatePriceWithAmountIn(
+        if (
+            devInspectRes &&
+            devInspectRes.events &&
+            !devInspectRes.error &&
+            devInspectRes.events.length === 1
+        ) {
+            // Price estimation, if successful, only returns one event, so this indexation is safe.
+            const priceEstimationEventJSON = devInspectRes.events[0]
+                .parsedJson as PriceEstimationEvent
+
+            const price =
+                priceEstimationEventJSON.amount_out /
+                priceEstimationEventJSON.amount_in
+            const scaledPrice =
+                price * 10 ** (this.coinA.decimals - this.coinB.decimals)
+
+            return {
+                price: scaledPrice,
+                fee: priceEstimationEventJSON.protocol_fee / amountInA,
+            }
+        }
+
+        // The first estimate failed. Retry in the opposite direction
+        estimate_txb = new TransactionBlock()
+        estimate_txb = this.rammSuiPool.estimatePriceWithAmountIn(
             estimate_txb,
             {
                 assetIn: this.coinB.type,
                 assetOut: this.coinA.type,
                 amountIn: amountInB,
             })
-
-        const devInspectRes = await this.suiClient.devInspectTransactionBlock({
+        devInspectRes = await this.suiClient.devInspectTransactionBlock({
             sender: this.senderAddress,
             transactionBlock: estimate_txb,
         })
 
-        // If:
-        // * the tx response is `null`, or
-        // * it isn't, but it has no `events` field in it, or
-        // * it does, but for some reason, the events array is empty
-        // then don't return any price information, which will cause the strategy to skip that
-        // round.
         if (
-            !devInspectRes ||
-            !devInspectRes.events ||
-            devInspectRes.events.length < 1
+            devInspectRes &&
+            devInspectRes.events &&
+            !devInspectRes.error &&
+            devInspectRes.events.length === 1
         ) {
-            return null
-        }
+            // Price estimation, if successful, only returns one event, so this indexation is safe.
+            const priceEstimationEventJSON = devInspectRes.events[0]
+                .parsedJson as PriceEstimationEvent
 
-        // If the transaction errored, don't return anything either.
-        if (devInspectRes.error) {
-            return null
-        }
+            // The price is inverted, as the trade is in the opposite direction
+            const price =
+                priceEstimationEventJSON.amount_in /
+                priceEstimationEventJSON.amount_out
+            const scaledPrice =
+                price * 10 ** (this.coinB.decimals - this.coinA.decimals)
 
-        const eventsJson = devInspectRes.events.map((event) => event.parsedJson as PriceEstimationEvent)
-
-        eventsJson.filter(
-            (event) => {
-                event.
+            return {
+                price: scaledPrice,
+                fee: priceEstimationEventJSON.protocol_fee / amountInB,
             }
-        )[0]
-
-        // Price estimation, if successful, only returns one event, so this indexation is safe.
-        const priceEstimationEventJSON = devInspectRes.events[0]
-            .parsedJson as PriceEstimationEvent
-
-        const price =
-            priceEstimationEventJSON.amount_out /
-            priceEstimationEventJSON.amount_in
-        const scaledPrice =
-            price * 10 ** (this.coinA.decimals - this.coinB.decimals)
-
-        return {
-            price: scaledPrice,
-            fee: priceEstimationEventJSON.protocol_fee / amountIn,
         }
+
+        // Price estimation failed in both directions
+        return null
     }
 }
