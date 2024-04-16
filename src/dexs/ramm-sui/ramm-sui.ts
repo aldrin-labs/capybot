@@ -1,4 +1,4 @@
-import { CoinStruct, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client"
+import { CoinStruct, DevInspectResults, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client"
 import { Keypair } from "@mysten/sui.js/cryptography"
 import {
     TransactionBlock,
@@ -217,6 +217,61 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         }
 
         return transactionBlock
+    }
+
+    private processPriceEstimationEvent(
+        amountIn: number,
+        devInspectRes: DevInspectResults,
+        a2b: boolean
+    ): {
+        price: number,
+        fee: number
+    } | null {
+        if (
+            // The result of `devInspectTransactionBlock` must not be `null`
+            devInspectRes &&
+            // Its `events` field must not be empty
+            devInspectRes.events &&
+            // No errors must have arisen during the price estimation `devInspect`
+            !devInspectRes.error &&
+            // Exactly one event must have been emitted
+            devInspectRes.events.length === 1
+        ) {
+            // Price estimation, if successful, only returns one event, so this indexation is safe.
+            const priceEstimationEventJSON = devInspectRes.events[0]
+                .parsedJson as PriceEstimationEvent
+
+            // Calculate the price
+            let price: number
+            if (a2b) {
+                price = priceEstimationEventJSON.amount_out /
+                priceEstimationEventJSON.amount_in
+            } else {
+                // The price is inverted, as the trade is in the opposite direction
+                price = priceEstimationEventJSON.amount_in /
+                priceEstimationEventJSON.amount_out
+            }
+
+            // Scale the price with correct amount of decimal places, depending on the direction
+            // of the successful price estimate
+            let scaledPrice: number
+            if (a2b) {
+                scaledPrice = price * 10 ** (this.coinA.decimals - this.coinB.decimals)
+            } else {
+                scaledPrice = price * 10 ** (this.coinB.decimals - this.coinA.decimals)
+            }
+
+            // Calculate the fee
+            const fee: number = priceEstimationEventJSON.protocol_fee / amountIn
+
+            return {
+                price: scaledPrice,
+                fee
+            }
+        } else {
+            // If, for any of the above reasons, the price estimation fails, return `null`
+            return null
+        }
     }
 
     /**
