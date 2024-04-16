@@ -241,23 +241,17 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             const priceEstimationEventJSON = devInspectRes.events[0]
                 .parsedJson as PriceEstimationEvent
 
-            // Calculate the price
-            let price: number
-            if (a2b) {
-                price = priceEstimationEventJSON.amount_out /
-                priceEstimationEventJSON.amount_in
-            } else {
-                // The price is inverted, as the trade is in the opposite direction
-                price = priceEstimationEventJSON.amount_in /
-                priceEstimationEventJSON.amount_out
-            }
-
-            // Scale the price with correct amount of decimal places, depending on the direction
-            // of the successful price estimate
+            // Calculate and scale the price with correct amount of decimal places, depending on
+            // the direction of the successful price estimate
             let scaledPrice: number
             if (a2b) {
+                const price =
+                    priceEstimationEventJSON.amount_out / priceEstimationEventJSON.amount_in
                 scaledPrice = price * 10 ** (this.coinA.decimals - this.coinB.decimals)
             } else {
+                // The price is inverted, as the trade is in the opposite direction
+                const price =
+                    priceEstimationEventJSON.amount_in / priceEstimationEventJSON.amount_out
                 scaledPrice = price * 10 ** (this.coinB.decimals - this.coinA.decimals)
             }
 
