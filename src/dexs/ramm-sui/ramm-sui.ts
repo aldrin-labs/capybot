@@ -301,27 +301,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             transactionBlock: estimate_txb,
         })
 
-        if (
-            devInspectRes &&
-            devInspectRes.events &&
-            !devInspectRes.error &&
-            devInspectRes.events.length === 1
-        ) {
-            // Price estimation, if successful, only returns one event, so this indexation is safe.
-            const priceEstimationEventJSON = devInspectRes.events[0]
-                .parsedJson as PriceEstimationEvent
-
-            const price =
-                priceEstimationEventJSON.amount_out /
-                priceEstimationEventJSON.amount_in
-            const scaledPrice =
-                price * 10 ** (this.coinA.decimals - this.coinB.decimals)
-
-            return {
-                price: scaledPrice,
-                fee: priceEstimationEventJSON.protocol_fee / amountInA,
-            }
-        }
+        this.processPriceEstimationEvent(amountInA, devInspectRes, true)
 
         // The first estimate failed. Retry in the opposite direction
         estimate_txb = new TransactionBlock()
@@ -337,30 +317,6 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             transactionBlock: estimate_txb,
         })
 
-        if (
-            devInspectRes &&
-            devInspectRes.events &&
-            !devInspectRes.error &&
-            devInspectRes.events.length === 1
-        ) {
-            // Price estimation, if successful, only returns one event, so this indexation is safe.
-            const priceEstimationEventJSON = devInspectRes.events[0]
-                .parsedJson as PriceEstimationEvent
-
-            // The price is inverted, as the trade is in the opposite direction
-            const price =
-                priceEstimationEventJSON.amount_in /
-                priceEstimationEventJSON.amount_out
-            const scaledPrice =
-                price * 10 ** (this.coinB.decimals - this.coinA.decimals)
-
-            return {
-                price: scaledPrice,
-                fee: priceEstimationEventJSON.protocol_fee / amountInB,
-            }
-        }
-
-        // Price estimation failed in both directions
-        return null
+        return this.processPriceEstimationEvent(amountInB, devInspectRes, false)
     }
 }
