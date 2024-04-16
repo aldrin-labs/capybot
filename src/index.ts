@@ -92,6 +92,7 @@ const rammSUItoUSDC = new RAMMPool(
     Assets.SUI,
     defaultAmounts[Assets.SUI.type],
     Assets.USDC,
+    defaultAmounts[Assets.USDC.type],
     rammUsdcSuiKeypair,
     "mainnet"
 )
