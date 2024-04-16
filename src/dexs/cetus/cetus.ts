@@ -87,18 +87,27 @@ export class CetusPool extends Pool<CetusParams> {
     async estimatePriceAndFee(): Promise<{
         price: number
         fee: number
-    }> {
-        const pool = await this.sdk.Pool.getPool(this.address)
-        const price = pool.current_sqrt_price ** 2 / 2 ** 128
+    } | null> {
+        try {
+            const pool = await this.sdk.Pool.getPool(this.address)
+            if (!pool) {
+                return null
+            }
 
-        const scaled_price =
-            price * 10 ** (this.coinA.decimals - this.coinB.decimals)
+            const price = pool.current_sqrt_price ** 2 / 2 ** 128
 
-        const fee = pool.fee_rate * 10 ** -6
+            const scaled_price =
+                price * 10 ** (this.coinA.decimals - this.coinB.decimals)
 
-        return {
-            price: scaled_price,
-            fee,
+            const fee = pool.fee_rate * 10 ** -6
+
+            return {
+                price: scaled_price,
+                fee,
+            }
+        } catch (error) {
+            console.error(error)
+            return null
         }
     }
 
