@@ -1,4 +1,9 @@
-import { CoinStruct, DevInspectResults, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client"
+import {
+    CoinStruct,
+    DevInspectResults,
+    SuiClient,
+    getFullnodeUrl,
+} from "@mysten/sui.js/client"
 import { Keypair } from "@mysten/sui.js/cryptography"
 import {
     TransactionBlock,
@@ -224,7 +229,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         devInspectRes: DevInspectResults,
         a2b: boolean
     ): {
-        price: number,
+        price: number
         fee: number
     } | null {
         if (
@@ -246,13 +251,17 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
             let scaledPrice: number
             if (a2b) {
                 const price =
-                    priceEstimationEventJSON.amount_out / priceEstimationEventJSON.amount_in
-                scaledPrice = price * 10 ** (this.coinA.decimals - this.coinB.decimals)
+                    priceEstimationEventJSON.amount_out /
+                    priceEstimationEventJSON.amount_in
+                scaledPrice =
+                    price * 10 ** (this.coinA.decimals - this.coinB.decimals)
             } else {
                 // The price is inverted, as the trade is in the opposite direction
                 const price =
-                    priceEstimationEventJSON.amount_in / priceEstimationEventJSON.amount_out
-                scaledPrice = price * 10 ** (this.coinB.decimals - this.coinA.decimals)
+                    priceEstimationEventJSON.amount_in /
+                    priceEstimationEventJSON.amount_out
+                scaledPrice =
+                    price * 10 ** (this.coinB.decimals - this.coinA.decimals)
             }
 
             // Calculate the fee
@@ -260,7 +269,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
 
             return {
                 price: scaledPrice,
-                fee
+                fee,
             }
         } else {
             // If, for any of the above reasons, the price estimation fails, return `null`
@@ -283,13 +292,11 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         const amountInB = this.defaultAmountCoinB * 10 ** this.coinB.decimals
 
         let estimate_txb: TransactionBlock = new TransactionBlock()
-        this.rammSuiPool.estimatePriceWithAmountIn(
-            estimate_txb,
-            {
-                assetIn: this.coinA.type,
-                assetOut: this.coinB.type,
-                amountIn: amountInA,
-            })
+        this.rammSuiPool.estimatePriceWithAmountIn(estimate_txb, {
+            assetIn: this.coinA.type,
+            assetOut: this.coinB.type,
+            amountIn: amountInA,
+        })
         let devInspectRes = await this.suiClient.devInspectTransactionBlock({
             sender: this.senderAddress,
             transactionBlock: estimate_txb,
@@ -305,7 +312,8 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
                 assetIn: this.coinB.type,
                 assetOut: this.coinA.type,
                 amountIn: amountInB,
-            })
+            }
+        )
         devInspectRes = await this.suiClient.devInspectTransactionBlock({
             sender: this.senderAddress,
             transactionBlock: estimate_txb,
