@@ -3,27 +3,27 @@ import SDK, {
     SdkOptions,
     adjustForSlippage,
     d,
-} from '@cetusprotocol/cetus-sui-clmm-sdk/dist'
+} from "@cetusprotocol/cetus-sui-clmm-sdk/dist"
 
-import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
-import { Keypair } from '@mysten/sui.js/cryptography'
-import { TransactionBlock } from '@mysten/sui.js/transactions'
+import { SuiClient, getFullnodeUrl } from "@mysten/sui.js/client"
+import { Keypair } from "@mysten/sui.js/cryptography"
+import { TransactionBlock } from "@mysten/sui.js/transactions"
 
-import { SuiNetworks } from '../../networks'
+import { SuiNetworks } from "../../networks"
 
-import BN from 'bn.js'
-import { getTotalBalanceByCoinType } from '../../utils/utils'
-import { CetusParams } from '../dexsParams'
-import { Pool } from '../pool'
-import { clmmMainnet } from './mainnet_config'
-import { Coin } from '../../coins'
+import BN from "bn.js"
+import { getTotalBalanceByCoinType } from "../../utils/utils"
+import { CetusParams } from "../dexsParams"
+import { Pool } from "../pool"
+import { clmmMainnet } from "./mainnet_config"
+import { Coin } from "../../coins"
 
 function buildSdkOptions(network: SuiNetworks): SdkOptions {
     switch (network) {
-        case 'mainnet':
+        case "mainnet":
             return clmmMainnet
-        case 'testnet':
-            throw new Error('Testnet not yet supported')
+        case "testnet":
+            throw new Error("Testnet not yet supported")
     }
 }
 
@@ -45,6 +45,13 @@ export class CetusPool extends Pool<CetusParams> {
 
         this.sdk.senderAddress = keypair.getPublicKey().toSuiAddress()
         this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
+    }
+
+    /**
+     * Reset the Sui client of this instance of `CetusPool`.
+     */
+    public resetSuiClient() {
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
     }
 
     /**
@@ -80,18 +87,27 @@ export class CetusPool extends Pool<CetusParams> {
     async estimatePriceAndFee(): Promise<{
         price: number
         fee: number
-    }> {
-        const pool = await this.sdk.Pool.getPool(this.address)
-        const price = pool.current_sqrt_price ** 2 / 2 ** 128
+    } | null> {
+        try {
+            const pool = await this.sdk.Pool.getPool(this.address)
+            if (!pool) {
+                return null
+            }
 
-        const scaled_price =
-            price * 10 ** (this.coinA.decimals - this.coinB.decimals)
+            const price = pool.current_sqrt_price ** 2 / 2 ** 128
 
-        const fee = pool.fee_rate * 10 ** -6
+            const scaled_price =
+                price * 10 ** (this.coinA.decimals - this.coinB.decimals)
 
-        return {
-            price: scaled_price,
-            fee,
+            const fee = pool.fee_rate * 10 ** -6
+
+            return {
+                price: scaled_price,
+                fee,
+            }
+        } catch (error) {
+            console.error(error)
+            return null
         }
     }
 

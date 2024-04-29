@@ -7,7 +7,7 @@ import {
     kraken,
     kucoin,
     okx,
-} from 'ccxt'
+} from "ccxt"
 
 const binanceExchange = new binance({ enableRateLimit: true })
 const bitgetExchange = new bitget({ enableRateLimit: true })

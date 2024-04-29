@@ -1,19 +1,19 @@
 export type argumentsType =
     | {
-          kind: 'Input'
+          kind: "Input"
           index: number
-          type?: 'object' | 'pure' | undefined
+          type?: "object" | "pure" | undefined
           value?: unknown
       }
     | {
-          kind: 'GasCoin'
+          kind: "GasCoin"
       }
     | {
-          kind: 'Result'
+          kind: "Result"
           index: number
       }
     | {
-          kind: 'NestedResult'
+          kind: "NestedResult"
           index: number
           resultIndex: number
       }

@@ -1,4 +1,9 @@
-import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/client"
+import {
+    JsonRpcError,
+    SuiClient,
+    SuiHTTPStatusError,
+    SuiTransactionBlockResponse,
+} from "@mysten/sui.js/client"
 import { Keypair } from "@mysten/sui.js/dist/cjs/cryptography/keypair"
 import { TransactionBlock } from "@mysten/sui.js/transactions"
 
@@ -67,9 +72,19 @@ export class Capybot {
         this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
     }
 
-    async loop(duration: number, delay: number) {
-        const startTime = new Date().getTime()
-
+    /**
+     * The main loop of the bot.
+     *
+     * It will run for `duration` milliseconds, with at least `delay` milliseconds between each
+     * iteration.
+     *
+     * @param startTime The time at which the bot began running, in milliseconds.
+     * @param duration How long the bot should run for, in milliseconds.
+     * @param delay The (minimum) delay between each iteration of the bot, in milliseconds.
+     * @param retries The number of times the bot should retry running this loop in case of a
+     *        recoverable error.
+     */
+    async innerLoop(startTime: number, duration: number, delay: number) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const uniqueStrategies: Record<string, any> = {}
         for (const pool in this.strategies) {
@@ -196,6 +211,78 @@ export class Capybot {
     }
 
     /**
+     * Execute the bot's main loop for a given duration, with a given delay between each iteration.
+     *
+     * If a recoverable exception is thrown (e.g. the server closes its connection, or resets it),
+     * the bot will attempt to recover by resetting all Sui clients and retrying the loop.
+     *
+     * It will not retry if the error is due to a lack of gas for fees.
+     *
+     * It will also not retry more than a set number of times.
+     *
+     * @param duration The duration for which the bot should run, in milliseconds.
+     * @param delay The delay between each iteration of the bot, in milliseconds.
+     * @param retries The maximum number of times the bot should retry running this loop in case
+     *        of a recoverable error. Defaults to 10 if not provided.
+     */
+    async outerLoop(duration: number, delay: number, retries = 10) {
+        // The bot's start time is only recorded once, at the beginning of the outer loop.
+        // This way, if the inner loop must be rerun, the bot's start time is not reset.
+        const startTime = new Date().getTime()
+
+        while (retries > 0) {
+            try {
+                await this.innerLoop(startTime, duration, delay)
+                // Notice what is happening here:
+                // If the inner loop can run sucessfully all the way to completion, no further
+                // retries need be made.
+                break
+            } catch (e) {
+                // If the error occurred over a lack of gas for fees, do not recover.
+                if (e instanceof JsonRpcError) {
+                    if (e.code === -32002) {
+                        // This error code corresponds to "Transaction execution failed due to issues with transaction inputs",
+                        // more specifically: the gas coin used by the PTB has insufficient balance for the budget set.
+                        // Rethrow, no point in retrying.
+                        throw e
+                    }
+                    // Depending on what other kinds of `JsonRpcError`s can be thrown, more `else` branches
+                    // may be needed here.
+                    // Server errors - `ECONNRESET`, etc
+                    // Log, and attempt to recover.
+                } else if (e instanceof SuiHTTPStatusError) {
+                    console.error("Sui HTTP Status Error! Error: " + e)
+                } else {
+                    console.error("Error in the inner loop: " + e)
+                }
+                console.error("Retrying...")
+
+                /**
+                 * Reset all Sui clients - not just `Capybot.suiClient` - and try again.
+                 * Reasoning: the error could have been caused by a network issue, such as the server
+                 * unilaterally closing the connection, or an involuntary reset of the connection.
+                 */
+                this.suiClient = new SuiClient({
+                    url: getFullnodeUrl(this.network),
+                })
+                for (const pool of Object.values(this.pools)) {
+                    if (pool instanceof CetusPool) {
+                        const cPool = pool as CetusPool
+                        cPool.resetSuiClient()
+                    } else if (pool instanceof RAMMPool) {
+                        const rPool = pool as RAMMPool
+                        rPool.resetSuiClient()
+                    }
+                }
+
+                // After this instruction is executed, the `catch` block is exited from, and
+                // the loop can restart, should there be tries left.
+                retries -= 1
+            }
+        }
+    }
+
+    /**
      * Given the SDK representation of a RAMM, and a trade's tx response, update the bot's record
      * of the RAMM's pool volumes.
      *
@@ -215,8 +302,12 @@ export class Capybot {
             const tradeEvent = rammTxResponse.events.filter((event) =>
                 event.type.split("::")[2].startsWith("TradeEvent")
             )[0]
+            // No trading event found in the response - perhaps the transaction failed, or the
+            // full node that replied did not yet receive its confirmation.
+            // Skip.
             if (tradeEvent === undefined) {
-                throw new Error("No TradeEvent found in the response")
+                console.error("No TradeEvent found in RAMM trade response!")
+                return
             }
 
             const tradeEventParsedJSON = tradeEvent.parsedJson as TradeEvent
@@ -246,10 +337,6 @@ export class Capybot {
                 amountIn
             this.rammPoolsVolume[ramm.poolAddress][assetOut.assetTicker] +=
                 amountOut
-
-            // TODO: log volumes for consumption by `capybot-monitor`, but only after cleaning
-            // this code up - messy
-            // ...
         } else {
             console.error(
                 `Trade failed with RAMM with ID ${ramm.poolAddress}: ` +
@@ -303,7 +390,9 @@ export class Capybot {
                     "imb ratios"
                 )
             } catch (e) {
-                console.error("Error logging RAMM imb. ratios/pool states: " + e)
+                console.error(
+                    "Error logging RAMM imb. ratios/pool states: " + e
+                )
             }
         }
     }
@@ -326,6 +415,10 @@ export class Capybot {
 
     /**
      * Signs and executes a transaction block, if it has any transactions in it.
+     *
+     * `SuiClient.signAndExecuteTransactionBlock` may raise exceptions, which are not caught here.
+     * They are the responsibility of the caller, which at the moment will, transitively, be
+     * `Capybot.outerLoop`.
      * @param transactionBlock
      * @param keypair
      * @param strategy
@@ -339,30 +432,25 @@ export class Capybot {
         showEvents: boolean = false
     ): Promise<SuiTransactionBlockResponse | undefined> {
         if (transactionBlock.blockData.transactions.length !== 0) {
-            try {
-                transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
-                const result =
-                    await this.suiClient.signAndExecuteTransactionBlock({
-                        transactionBlock,
-                        signer: keypair,
-                        options: {
-                            showObjectChanges: true,
-                            showEffects: true,
-                            showEvents,
-                        },
-                    })
-                logger.info(
-                    {
-                        strategy: strategy,
-                        transaction_status: result.effects?.status,
-                    },
-                    "transaction"
-                )
+            transactionBlock.setGasBudget(DEFAULT_GAS_BUDGET)
+            const result = await this.suiClient.signAndExecuteTransactionBlock({
+                transactionBlock,
+                signer: keypair,
+                options: {
+                    showObjectChanges: true,
+                    showEffects: true,
+                    showEvents,
+                },
+            })
+            logger.info(
+                {
+                    strategy: strategy,
+                    transaction_status: result.effects?.status,
+                },
+                "transaction"
+            )
 
-                return result
-            } catch (e) {
-                console.error(e)
-            }
+            return result
         }
     }
 

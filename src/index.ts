@@ -13,18 +13,18 @@ export const MAX_GAS_PRICE_PER_TRANSACTION = 4_400_000
 
 //const RIDE_THE_TREND_LIMIT = 1.000005
 
-// Arbitrage threshold - 0.05%, or above
-const ARBITRAGE_RELATIVE_LIMIT = 1.0005
+// Arbitrage threshold - 0.1%, or above
+const ARBITRAGE_RELATIVE_LIMIT = 1.001
 
 //const MARKET_DIFFERENCE_LIMIT = 1.01
 
 /**
- * Default amount to trade, for each token. Set to approximately 0.1 USD each.
+ * Default amount to trade, for each token. Set to approximately 0.05 USD each.
  */
 export const defaultAmounts: Record<string, number> = {}
-defaultAmounts[Assets.SUI.type] = 0.06
-defaultAmounts[Assets.USDC.type] = 0.1
-defaultAmounts[Assets.USDT.type] = 0.1
+defaultAmounts[Assets.SUI.type] = 0.034
+defaultAmounts[Assets.USDC.type] = 0.05
+defaultAmounts[Assets.USDT.type] = 0.05
 
 // Setup wallet from passphrase.
 const cetusUsdcSuiPhrase = process.env.CETUS_SUI_USDC_ADMIN_PHRASE
@@ -92,6 +92,7 @@ const rammSUItoUSDC = new RAMMPool(
     Assets.SUI,
     defaultAmounts[Assets.SUI.type],
     Assets.USDC,
+    defaultAmounts[Assets.USDC.type],
     rammUsdcSuiKeypair,
     "mainnet"
 )
@@ -136,4 +137,4 @@ capybot.addStrategy(
 const oneHour = 3.6e6
 
 // Start the bot
-capybot.loop(3 * oneHour, 1000)
+capybot.outerLoop(3 * oneHour, 1000)

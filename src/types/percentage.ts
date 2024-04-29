@@ -1,4 +1,4 @@
-import { TokenAmount } from './token_amount'
+import { TokenAmount } from "./token_amount"
 
 /**
  * Instances of this class represent a percentage value.
@@ -39,7 +39,7 @@ export class Percentage {
     }
 
     toString(): string {
-        return this.percentage.toString + '%'
+        return this.percentage.toString + "%"
     }
 }
 

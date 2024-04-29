@@ -1,26 +1,32 @@
-import { CoinStruct, SuiClient, getFullnodeUrl } from '@mysten/sui.js/client'
-import { Keypair } from '@mysten/sui.js/cryptography'
+import {
+    CoinStruct,
+    DevInspectResults,
+    SuiClient,
+    getFullnodeUrl,
+} from "@mysten/sui.js/client"
+import { Keypair } from "@mysten/sui.js/cryptography"
 import {
     TransactionBlock,
     TransactionObjectArgument,
-} from '@mysten/sui.js/transactions'
+} from "@mysten/sui.js/transactions"
 
-import { SuiNetworks } from '../../networks'
+import { SuiNetworks } from "../../networks"
 
-import { RAMMSuiParams } from '../dexsParams'
-import { Pool } from '../pool'
+import { RAMMSuiParams } from "../dexsParams"
+import { Pool } from "../pool"
 
 import {
     RAMMSuiPool,
     RAMMSuiPoolConfig,
     PriceEstimationEvent,
-} from '@ramm/ramm-sui-sdk'
-import { Coin } from '../../coins'
-import { logger } from '../../logger'
+} from "@ramm/ramm-sui-sdk"
+import { Coin } from "../../coins"
+import { logger } from "../../logger"
 
 export class RAMMPool extends Pool<RAMMSuiParams> {
     public rammSuiPool: RAMMSuiPool
     public suiClient: SuiClient
+    public network: SuiNetworks
 
     /**
      * The SUI address of the SUI token, in short and long form.
@@ -31,13 +37,17 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
      * In order to know whether the payment is in SUI, the asset type must be compared to these
      * values.
      */
-    private static readonly SUI_ADDRESS_SHORT: string = '0x2::SUI::sui'
+    private static readonly SUI_ADDRESS_SHORT: string = "0x2::SUI::sui"
     private static readonly SUI_ADDRESS_LONG: string =
-        '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'
+        "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
 
     public senderAddress: string
-    // Required to estimate the price of a trade
+    // The below are required to estimate the price of a trade.
+    // In case one direction of the price estimate fails due to that asset being close to the
+    // RAMM's `ONE +/- DELTA` threshold, the other asset's default amount is used to perform an
+    // estimate in the opposite direction, which is guaranteed to work.
     public defaultAmountCoinA: number
+    public defaultAmountCoinB: number
 
     constructor(
         rammConfig: RAMMSuiPoolConfig,
@@ -45,16 +55,26 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         coinA: Coin,
         defaultAmountCoinA: number,
         coinB: Coin,
+        defaultAmountCoinB: number,
         keypair: Keypair,
         network: SuiNetworks
     ) {
         super(address, coinA, coinB)
         this.defaultAmountCoinA = defaultAmountCoinA
+        this.defaultAmountCoinB = defaultAmountCoinB
 
         this.rammSuiPool = new RAMMSuiPool(rammConfig)
         this.senderAddress = keypair.getPublicKey().toSuiAddress()
 
-        this.suiClient = new SuiClient({ url: getFullnodeUrl(network) })
+        this.network = network
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
+    }
+
+    /**
+     * Reset the Sui client of this instance of `RAMMPool`.
+     */
+    public resetSuiClient() {
+        this.suiClient = new SuiClient({ url: getFullnodeUrl(this.network) })
     }
 
     /**
@@ -177,7 +197,7 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         params: RAMMSuiParams
     ): Promise<TransactionBlock> {
         if (params.amountIn === 0) {
-            throw new Error('AmountIn or amountOut must be non-zero')
+            throw new Error("AmountIn or amountOut must be non-zero")
         }
 
         const { assetIn, assetOut } = params.a2b
@@ -204,6 +224,59 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
         return transactionBlock
     }
 
+    private processPriceEstimationEvent(
+        amountIn: number,
+        devInspectRes: DevInspectResults,
+        a2b: boolean
+    ): {
+        price: number
+        fee: number
+    } | null {
+        if (
+            // The result of `devInspectTransactionBlock` must not be `null`
+            devInspectRes &&
+            // Its `events` field must not be empty
+            devInspectRes.events &&
+            // No errors must have arisen during the price estimation `devInspect`
+            !devInspectRes.error &&
+            // Exactly one event must have been emitted
+            devInspectRes.events.length === 1
+        ) {
+            // Price estimation, if successful, only returns one event, so this indexation is safe.
+            const priceEstimationEventJSON = devInspectRes.events[0]
+                .parsedJson as PriceEstimationEvent
+
+            // Calculate and scale the price with correct amount of decimal places, depending on
+            // the direction of the successful price estimate
+            let scaledPrice: number
+            if (a2b) {
+                const price =
+                    priceEstimationEventJSON.amount_out /
+                    priceEstimationEventJSON.amount_in
+                scaledPrice =
+                    price * 10 ** (this.coinA.decimals - this.coinB.decimals)
+            } else {
+                // The price is inverted, as the trade is in the opposite direction
+                const price =
+                    priceEstimationEventJSON.amount_in /
+                    priceEstimationEventJSON.amount_out
+                scaledPrice =
+                    price * 10 ** (this.coinB.decimals - this.coinA.decimals)
+            }
+
+            // Calculate the fee
+            const fee: number = priceEstimationEventJSON.protocol_fee / amountIn
+
+            return {
+                price: scaledPrice,
+                fee,
+            }
+        } else {
+            // If, for any of the above reasons, the price estimation fails, return `null`
+            return null
+        }
+    }
+
     /**
      * Given a trader for a RAMM Sui pool, a base asset, a quote asset and a quantity, returns the
      * estimated price a trade for such an amount would receive.
@@ -214,48 +287,38 @@ export class RAMMPool extends Pool<RAMMSuiParams> {
     async estimatePriceAndFee(): Promise<{
         price: number
         fee: number
-    }> {
-        const amountIn = this.defaultAmountCoinA * 10 ** this.coinA.decimals
+    } | null> {
+        const amountInA = this.defaultAmountCoinA * 10 ** this.coinA.decimals
+        const amountInB = this.defaultAmountCoinB * 10 ** this.coinB.decimals
 
-        const estimate_txb: TransactionBlock =
-            this.rammSuiPool.estimatePriceWithAmountIn({
-                assetIn: this.coinA.type,
-                assetOut: this.coinB.type,
-                amountIn,
-            })
-
-        const devInspectRes = await this.suiClient.devInspectTransactionBlock({
+        let estimate_txb: TransactionBlock = new TransactionBlock()
+        this.rammSuiPool.estimatePriceWithAmountIn(estimate_txb, {
+            assetIn: this.coinA.type,
+            assetOut: this.coinB.type,
+            amountIn: amountInA,
+        })
+        let devInspectRes = await this.suiClient.devInspectTransactionBlock({
             sender: this.senderAddress,
             transactionBlock: estimate_txb,
         })
 
-        if (
-            !devInspectRes ||
-            !devInspectRes.events ||
-            devInspectRes.events.length === 0
-        ) {
-            logger.error('No events found in the transaction block')
-        }
+        this.processPriceEstimationEvent(amountInA, devInspectRes, true)
 
-        if (devInspectRes.error) {
-            throw new Error(
-                'Price estimation devInpect failed with: ' + devInspectRes.error
-            )
-        }
+        // The first estimate failed. Retry in the opposite direction
+        estimate_txb = new TransactionBlock()
+        estimate_txb = this.rammSuiPool.estimatePriceWithAmountIn(
+            estimate_txb,
+            {
+                assetIn: this.coinB.type,
+                assetOut: this.coinA.type,
+                amountIn: amountInB,
+            }
+        )
+        devInspectRes = await this.suiClient.devInspectTransactionBlock({
+            sender: this.senderAddress,
+            transactionBlock: estimate_txb,
+        })
 
-        // Price estimation, if successful, only returns one event, so this indexation is safe.
-        const priceEstimationEventJSON = devInspectRes.events[0]
-            .parsedJson as PriceEstimationEvent
-
-        const price =
-            priceEstimationEventJSON.amount_out /
-            priceEstimationEventJSON.amount_in
-        const scaledPrice =
-            price * 10 ** (this.coinA.decimals - this.coinB.decimals)
-
-        return {
-            price: scaledPrice,
-            fee: priceEstimationEventJSON.protocol_fee / amountIn,
-        }
+        return this.processPriceEstimationEvent(amountInB, devInspectRes, false)
     }
 }
