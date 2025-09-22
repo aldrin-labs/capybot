@@ -25,7 +25,7 @@ export class TokenAmount {
      */
     add(other: TokenAmount): TokenAmount {
         if (this.coin != other.coin) {
-            throw new Error('Trying to add different coin types')
+            throw new Error("Trying to add different coin types")
         }
         return new TokenAmount(
             this.amount + other.amount,
@@ -42,7 +42,7 @@ export class TokenAmount {
      */
     subtract(other: TokenAmount): TokenAmount {
         if (this.coin != other.coin) {
-            throw new Error('Trying to subtract different coin types')
+            throw new Error("Trying to subtract different coin types")
         }
         return new TokenAmount(
             this.amount - other.amount,
@@ -52,6 +52,6 @@ export class TokenAmount {
     }
 
     toString(): string {
-        return this.amount.toString() + ' ' + this.symbol
+        return this.amount.toString() + " " + this.symbol
     }
 }

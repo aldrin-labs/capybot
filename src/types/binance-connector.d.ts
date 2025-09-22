@@ -1,7 +1,7 @@
 // The types have been deduced from the javascript code, annotations and the Binance API doc https://binance-docs.github.io/apidocs/
 // This file is partial, if the method you want to use is not yet typed, feel free to contribute
-declare module '@binance/connector' {
-    import { AxiosResponse, Method } from 'axios'
+declare module "@binance/connector" {
+    import { AxiosResponse, Method } from "axios"
     type Logger = {
         debug: () => void
         log: () => void
@@ -14,8 +14,8 @@ declare module '@binance/connector' {
         logger?: Logger
     }
     // Market
-    export type RateLimitType = 'REQUEST_WEIGHT' | 'ORDERS' | 'RAW_REQUESTS'
-    export type RateLimitInterval = 'SECOND' | 'MINUTE' | 'DAY'
+    export type RateLimitType = "REQUEST_WEIGHT" | "ORDERS" | "RAW_REQUESTS"
+    export type RateLimitInterval = "SECOND" | "MINUTE" | "DAY"
     export type RateLimit = {
         rateLimitType: RateLimitType
         interval: RateLimitInterval
@@ -23,33 +23,33 @@ declare module '@binance/connector' {
         limit: number
     }
     export type FilterType =
-        | 'PRICE_FILTER'
-        | 'PERCENT_PRICE'
-        | 'PERCENT_PRICE_BY_SIDE'
-        | 'LOT_SIZE'
-        | 'MIN_NOTIONAL'
-        | 'ICEBERG_PARTS'
-        | 'MARKET_LOT_SIZE'
-        | 'MAX_NUM_ORDERS'
-        | 'MAX_NUM_ALGO_ORDERS'
-        | 'MAX_NUM_ICEBERG_ORDERS'
-        | 'MAX_POSITION'
-        | 'EXCHANGE_MAX_NUM_ORDERS'
-        | 'EXCHANGE_MAX_NUM_ALGO_ORDERS'
+        | "PRICE_FILTER"
+        | "PERCENT_PRICE"
+        | "PERCENT_PRICE_BY_SIDE"
+        | "LOT_SIZE"
+        | "MIN_NOTIONAL"
+        | "ICEBERG_PARTS"
+        | "MARKET_LOT_SIZE"
+        | "MAX_NUM_ORDERS"
+        | "MAX_NUM_ALGO_ORDERS"
+        | "MAX_NUM_ICEBERG_ORDERS"
+        | "MAX_POSITION"
+        | "EXCHANGE_MAX_NUM_ORDERS"
+        | "EXCHANGE_MAX_NUM_ALGO_ORDERS"
     export type PriceFilter = {
-        filterType: 'PRICE_FILTER'
+        filterType: "PRICE_FILTER"
         minPrice: string
         maxPrice: string
         tickSize: string
     }
     export type PercentPriceFilter = {
-        filterType: 'PERCENT_PRICE'
+        filterType: "PERCENT_PRICE"
         multiplierUp: string
         multiplierDown: string
         avgPriceMins: number
     }
     export type PercentPriceBySideFilter = {
-        filterType: 'PERCENT_PRICE_BY_SIDE'
+        filterType: "PERCENT_PRICE_BY_SIDE"
         bidMultiplierUp: string
         bidMultiplierDown: string
         askMultiplierUp: string
@@ -57,49 +57,49 @@ declare module '@binance/connector' {
         avgPriceMins: number
     }
     export type LotSizeFilter = {
-        filterType: 'LOT_SIZE'
+        filterType: "LOT_SIZE"
         minQty: string
         maxQty: string
         stepSize: string
     }
     export type MinNotionalFilter = {
-        filterType: 'MIN_NOTIONAL'
+        filterType: "MIN_NOTIONAL"
         minNotional: string
         applyToMarket: boolean
         avgPriceMins: number
     }
     export type IcebergPartsFilter = {
-        filterType: 'ICEBERG_PARTS'
+        filterType: "ICEBERG_PARTS"
         limit: number
     }
     export type MarketLotSizeFilter = {
-        filterType: 'MARKET_LOT_SIZE'
+        filterType: "MARKET_LOT_SIZE"
         minQty: string
         maxQty: string
         stepSize: string
     }
     export type MaxNumOrdersFilter = {
-        filterType: 'MAX_NUM_ORDERS'
+        filterType: "MAX_NUM_ORDERS"
         maxNumOrders: number
     }
     export type MaxNumAlgoOrdersFilter = {
-        filterType: 'MAX_NUM_ALGO_ORDERS'
+        filterType: "MAX_NUM_ALGO_ORDERS"
         maxNumAlgoOrders: number
     }
     export type MaxNumIcebergOrdersFilter = {
-        filterType: 'MAX_NUM_ICEBERG_ORDERS'
+        filterType: "MAX_NUM_ICEBERG_ORDERS"
         maxNumIcebergOrders: number
     }
     export type MaxPositionFilter = {
-        filterType: 'MAX_POSITION'
+        filterType: "MAX_POSITION"
         maxPosition: string
     }
     export type ExchangeMaxNumOrdersFilter = {
-        filterType: 'EXCHANGE_MAX_NUM_ORDERS'
+        filterType: "EXCHANGE_MAX_NUM_ORDERS"
         maxNumOrders: number
     }
     export type ExchangeMaxNumAlgoOrdersFilter = {
-        filterType: 'EXCHANGE_MAX_NUM_ALGO_ORDERS'
+        filterType: "EXCHANGE_MAX_NUM_ALGO_ORDERS"
         maxNumAlgoOrders: number
     }
     export type Filter =
@@ -117,14 +117,14 @@ declare module '@binance/connector' {
         | ExchangeMaxNumOrdersFilter
         | ExchangeMaxNumAlgoOrdersFilter
     export type SymbolStatus =
-        | 'PRE_TRADING'
-        | 'TRADING'
-        | 'POST_TRADING'
-        | 'END_OF_DAY'
-        | 'HALT'
-        | 'AUCTION_MATCH'
-        | 'BREAK'
-    export type Permission = 'SPOT' | 'MARGIN' | 'LEVERAGED' | 'TRD_GRP_002'
+        | "PRE_TRADING"
+        | "TRADING"
+        | "POST_TRADING"
+        | "END_OF_DAY"
+        | "HALT"
+        | "AUCTION_MATCH"
+        | "BREAK"
+    export type Permission = "SPOT" | "MARGIN" | "LEVERAGED" | "TRD_GRP_002"
     export type SymbolInformation = {
         symbol: string
         status: SymbolStatus
@@ -163,7 +163,7 @@ declare module '@binance/connector' {
         canWithdraw: boolean
         canDeposit: boolean
         updateTime: number
-        accountType: 'SPOT'
+        accountType: "SPOT"
         balances: {
             asset: string
             free: string
@@ -171,25 +171,25 @@ declare module '@binance/connector' {
         }[]
         permissions: string[]
     }
-    export type OrderSide = 'BUY' | 'SELL'
+    export type OrderSide = "BUY" | "SELL"
     export type OrderType =
-        | 'LIMIT'
-        | 'MARKET'
-        | 'STOP_LOSS'
-        | 'STOP_LOSS_LIMIT'
-        | 'TAKE_PROFIT'
-        | 'TAKE_PROFIT_LIMIT'
-        | 'LIMIT_MAKER'
-    export type TimeInForce = 'GTC' | 'IOC' | 'FOK'
-    export type NewOrderRespType = 'ACK' | 'RESULT' | 'FULL'
+        | "LIMIT"
+        | "MARKET"
+        | "STOP_LOSS"
+        | "STOP_LOSS_LIMIT"
+        | "TAKE_PROFIT"
+        | "TAKE_PROFIT_LIMIT"
+        | "LIMIT_MAKER"
+    export type TimeInForce = "GTC" | "IOC" | "FOK"
+    export type NewOrderRespType = "ACK" | "RESULT" | "FULL"
     export type OrderStatus =
-        | 'NEW'
-        | 'PARTIALLY_FILLED'
-        | 'FILLED'
-        | 'CANCELED'
-        | 'PENDING_CANCEL'
-        | 'REJECTED'
-        | 'EXPIRED'
+        | "NEW"
+        | "PARTIALLY_FILLED"
+        | "FILLED"
+        | "CANCELED"
+        | "PENDING_CANCEL"
+        | "REJECTED"
+        | "EXPIRED"
     export type OrderOptions = {
         timeInForce?: TimeInForce
         quantity?: string | number

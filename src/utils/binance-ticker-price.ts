@@ -1,4 +1,4 @@
-import { Spot } from '@binance/connector-typescript'
+import { Spot } from "@binance/connector-typescript"
 
 // Create a new Binance Spot client.
 const client = new Spot()
@@ -21,7 +21,7 @@ async function getTickerPrice(symbol: string): Promise<string> {
  */
 export async function BTCtoUSDT() {
     // Get the ticker price for BTCUSDT.
-    const price = await getTickerPrice('BTCUSDT')
+    const price = await getTickerPrice("BTCUSDT")
     // Return the price data.
     return price
 }
@@ -32,7 +32,7 @@ export async function BTCtoUSDT() {
  */
 export async function BTCtoUSDC() {
     // Get the ticker price for BTCUSDC.
-    const price = await getTickerPrice('BTCUSDC')
+    const price = await getTickerPrice("BTCUSDC")
     // Return the price data.
     return price
 }
@@ -43,7 +43,7 @@ export async function BTCtoUSDC() {
  */
 export async function SUItoUSDT() {
     // Get the ticker price for SUIUSDT.
-    const price = await getTickerPrice('SUIUSDT')
+    const price = await getTickerPrice("SUIUSDT")
     // Return the price data.
     return price
 }
@@ -54,7 +54,7 @@ export async function SUItoUSDT() {
  */
 export async function SUItoTUSD() {
     // Get the ticker price for SUITUSD.
-    const price = await getTickerPrice('SUITUSD')
+    const price = await getTickerPrice("SUITUSD")
     // Return the price data.
     return price
 }
@@ -65,7 +65,7 @@ export async function SUItoTUSD() {
  */
 export async function SUItoBTC() {
     // Get the ticker price for SUIBTC.
-    const price = await getTickerPrice('SUIBTC')
+    const price = await getTickerPrice("SUIBTC")
     // Return the price data.
     return price
 }
@@ -76,7 +76,7 @@ export async function SUItoBTC() {
  */
 export async function SUItoBNB() {
     // Get the ticker price for SUIBNB.
-    const price = await getTickerPrice('SUIBNB')
+    const price = await getTickerPrice("SUIBNB")
     // Return the price data.
     return price
 }
@@ -87,7 +87,7 @@ export async function SUItoBNB() {
  */
 export async function SUItoEUR() {
     // Get the ticker price for SUIEUR.
-    const price = await getTickerPrice('SUIEUR')
+    const price = await getTickerPrice("SUIEUR")
     // Return the price data.
     return price
 }
@@ -98,7 +98,7 @@ export async function SUItoEUR() {
  */
 export async function SUItoTRY() {
     // Get the ticker price for SUITRY.
-    const price = await getTickerPrice('SUITRY')
+    const price = await getTickerPrice("SUITRY")
     // Return the price data.
     return price
 }

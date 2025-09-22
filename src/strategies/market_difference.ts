@@ -1,8 +1,8 @@
-import { Strategy } from './strategy'
-import { DataPoint, DataType } from '../data_sources/data_point'
-import { TradeOrder } from './order'
-import { Pool } from '../dexs/pool'
-import { CetusParams, TurbosParams } from '../dexs/dexsParams'
+import { Strategy } from "./strategy"
+import { DataPoint, DataType } from "../data_sources/data_point"
+import { TradeOrder } from "./order"
+import { Pool } from "../dexs/pool"
+import { CetusParams, TurbosParams } from "../dexs/dexsParams"
 
 export class MarketDifference extends Strategy {
     private readonly pool: Pool<CetusParams | TurbosParams>

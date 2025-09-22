@@ -1,13 +1,13 @@
-import { PaginatedCoins, SuiClient } from '@mysten/sui.js/client'
+import { PaginatedCoins, SuiClient } from "@mysten/sui.js/client"
 import {
     TransactionArgument,
     TransactionBlock,
-} from '@mysten/sui.js/transactions'
-import { normalizeSuiObjectId } from '@mysten/sui.js/utils'
+} from "@mysten/sui.js/transactions"
+import { normalizeSuiObjectId } from "@mysten/sui.js/utils"
 
-import Decimal from 'decimal.js'
+import Decimal from "decimal.js"
 
-export const SUI_COIN_OBJECT_ID = '0x2::sui::SUI'
+export const SUI_COIN_OBJECT_ID = "0x2::sui::SUI"
 
 export function convertTradeCoins(
     txb: TransactionBlock,
@@ -37,13 +37,13 @@ export type CoinAsset = {
 
 export function moveCallCoinZero(txb: TransactionBlock, coinType: string) {
     return txb.moveCall({
-        target: '0x2::coin::zero',
+        target: "0x2::coin::zero",
         typeArguments: [coinType],
     })
 }
 
 function isSUI(coinType: string) {
-    return coinType.toLowerCase().indexOf('sui') > -1
+    return coinType.toLowerCase().indexOf("sui") > -1
 }
 
 function isSuiCoin(coinType: string) {
@@ -53,14 +53,14 @@ function isSuiCoin(coinType: string) {
 }
 
 export function extractStructTagFromType(type: string): SuiStructTag {
-    let _type = type.replace(/\s/g, '')
+    let _type = type.replace(/\s/g, "")
 
     const genericsString = _type.match(/(<.+>)$/)
     const generics = genericsString?.[0]?.match(
         /(\w+::\w+::\w+)(?:<.*?>(?!>))?/g
     )
     if (generics) {
-        _type = _type.slice(0, _type.indexOf('<'))
+        _type = _type.slice(0, _type.indexOf("<"))
         const tag = extractStructTagFromType(_type)
         const structTag: SuiStructTag = {
             ...tag,
@@ -79,15 +79,15 @@ export function extractStructTagFromType(type: string): SuiStructTag {
         )
         return structTag
     }
-    const parts = _type.split('::')
+    const parts = _type.split("::")
 
     const structTag: SuiStructTag = {
         full_address: _type,
-        address: parts[2] === 'SUI' ? '0x2' : normalizeSuiObjectId(parts[0]),
+        address: parts[2] === "SUI" ? "0x2" : normalizeSuiObjectId(parts[0]),
         module: parts[1],
         name: parts[2],
         type_arguments: [],
-        source_address: '',
+        source_address: "",
     }
     structTag.full_address = `${structTag.address}::${structTag.module}::${structTag.name}`
     structTag.source_address = composeType(
@@ -115,10 +115,10 @@ export function composeType(address: string, ...args: unknown[]): string {
         : []
     const chains = [address, ...args].filter(Boolean)
 
-    let result: string = chains.join('::')
+    let result: string = chains.join("::")
 
     if (generics && generics.length) {
-        result += `<${generics.join(', ')}>`
+        result += `<${generics.join(", ")}>`
     }
 
     return result
@@ -133,7 +133,7 @@ export async function selectTradeCoins(
     console.log(
         `selectTradeCoins: coinType: (${coinType}), expectedAmount: (${expectedAmount})`
     )
-    const coins: PaginatedCoins['data'][number][] = []
+    const coins: PaginatedCoins["data"][number][] = []
     const coinIds: string[] = []
     let totalAmount = new Decimal(0)
     let result: PaginatedCoins | undefined
@@ -183,15 +183,15 @@ export async function getBalancesForCoinTypes(
     suiClient: SuiClient,
     owner: string,
     coinTypes: Set<string>
-): Promise<Map<string, BigInt>> {
-    let coinsBalances = new Map<string, BigInt>()
+): Promise<Map<string, bigint>> {
+    const coinsBalances = new Map<string, bigint>()
 
-    for (let coinType of coinTypes.values()) {
-        let coinBalance = await suiClient.getBalance({
+    for (const coinType of coinTypes.values()) {
+        const coinBalance = await suiClient.getBalance({
             owner,
             coinType,
         })
-        console.log(coinType, ' - ', BigInt(coinBalance.totalBalance))
+        console.log(coinType, " - ", BigInt(coinBalance.totalBalance))
         coinsBalances.set(coinType, BigInt(coinBalance.totalBalance))
     }
 
@@ -236,90 +236,4 @@ export async function buildInputCoinForAmount(
     )
     console.log(`coinObjectIds: ${coinObjectIds}`)
     return coinObjectIds.map((id) => txb.object(id))
-}
-
-function selectCoinObjectIdGreaterThanOrEqual(
-    coins: CoinAsset[],
-    amount: bigint,
-    exclude: string[] = []
-): { objectArray: string[]; remainCoins: CoinAsset[] } {
-    const objectArray = selectCoinAssetGreaterThanOrEqual(
-        coins,
-        amount,
-        exclude
-    ).selectedCoins.map((item) => item.coinObjectId)
-    const remainCoins = selectCoinAssetGreaterThanOrEqual(
-        coins,
-        amount,
-        exclude
-    ).remainingCoins
-    return { objectArray, remainCoins }
-}
-
-function selectCoinAssetGreaterThanOrEqual(
-    coins: CoinAsset[],
-    amount: bigint,
-    exclude: string[] = []
-): { selectedCoins: CoinAsset[]; remainingCoins: CoinAsset[] } {
-    const sortedCoins = sortByBalance(
-        coins.filter((c) => !exclude.includes(c.coinObjectId))
-    )
-
-    const total = calculateTotalBalance(sortedCoins)
-
-    if (total < amount) {
-        return { selectedCoins: [], remainingCoins: sortedCoins }
-    }
-    if (total === amount) {
-        return { selectedCoins: sortedCoins, remainingCoins: [] }
-    }
-
-    let sum = BigInt(0)
-    const selectedCoins = []
-    const remainingCoins = [...sortedCoins]
-    while (sum < total) {
-        const target = amount - sum
-        const coinWithSmallestSufficientBalanceIndex = remainingCoins.findIndex(
-            (c) => c.balance >= target
-        )
-        if (coinWithSmallestSufficientBalanceIndex !== -1) {
-            selectedCoins.push(
-                remainingCoins[coinWithSmallestSufficientBalanceIndex]
-            )
-            remainingCoins.splice(coinWithSmallestSufficientBalanceIndex, 1)
-            break
-        }
-
-        const coinWithLargestBalance = remainingCoins.pop()!
-        if (coinWithLargestBalance.balance > 0) {
-            selectedCoins.push(coinWithLargestBalance)
-            sum += coinWithLargestBalance.balance
-        }
-    }
-    return {
-        selectedCoins: sortByBalance(selectedCoins),
-        remainingCoins: sortByBalance(remainingCoins),
-    }
-}
-
-/**
- * Sort coin by balance in an ascending order
- */
-function sortByBalance(coins: CoinAsset[]): CoinAsset[] {
-    // eslint-disable-next-line no-nested-ternary
-    return coins.sort((a, b) =>
-        a.balance < b.balance ? -1 : a.balance > b.balance ? 1 : 0
-    )
-}
-
-function sortByBalanceDes(coins: CoinAsset[]): CoinAsset[] {
-    // eslint-disable-next-line no-nested-ternary
-    return coins.sort((a, b) =>
-        a.balance > b.balance ? -1 : a.balance < b.balance ? 0 : 1
-    )
-}
-
-// eslint-disable-next-line @typescript-eslint/adjacent-overload-signatures
-function calculateTotalBalance(coins: CoinAsset[]): bigint {
-    return coins.reduce((partialSum, c) => partialSum + c.balance, BigInt(0))
 }

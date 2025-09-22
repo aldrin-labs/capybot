@@ -1,8 +1,8 @@
-import { DataPoint, DataType } from '../data_sources/data_point'
-import { average } from 'simple-statistics'
-import { Strategy } from './strategy'
-import { TradeOrder } from './order'
-import { Coin } from '../coins'
+import { DataPoint, DataType } from "../data_sources/data_point"
+import { average } from "simple-statistics"
+import { Strategy } from "./strategy"
+import { TradeOrder } from "./order"
+import { Coin } from "../coins"
 
 /**
  * If the price of a token from some data source, say an exchange, looks like it's going into a period where it's price is increasing we

@@ -204,7 +204,7 @@ The following parameters are required:
 -   For example, a value of 1.05 means that the price difference should be at least 5%.
 -   name: A human-readable name for this strategy.
 
-## Build and Run the Bot
+## Build and run the bot
 
 Build the project with `yarn build`
 
@@ -213,6 +213,14 @@ Run the script with `yarn start`
 This will run the bot for one hour.
 
 To run the bot for longer, the `duration` value, in the call to `capybot.loop` in `src/index.ts`, must be changed.
+
+An example of how to call it, while logging its output to `STDOUT/STDERR` and to a log file
+simultaneously, would be
+
+```bash
+yarn build
+yarn start 2>&1 | tee capybot.log
+```
 
 ## Monitoring
 
